@@ -1,0 +1,133 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "אדמין המערכת",
+      "email": "admin@eventhub.co.il",
+      "password_hash": "$2b$10$PzXDKliCNROR2PtO7zxNuuaEQtBtizoJANER7BghpPSeEE7JKPQXu",
+      "role": "admin",
+      "phone": "050-0000000",
+      "created_at": "2026-07-28T15:43:57.450Z"
+    },
+    {
+      "id": 2,
+      "name": "רועי שחר (צלם)",
+      "email": "roey@studioshahar.co.il",
+      "password_hash": "$2b$10$PzXDKliCNROR2PtO7zxNuuaEQtBtizoJANER7BghpPSeEE7JKPQXu",
+      "role": "vendor",
+      "phone": "052-1234567",
+      "created_at": "2026-07-28T15:43:57.450Z"
+    },
+    {
+      "id": 3,
+      "name": "DJ דניאל גולן",
+      "email": "daniel@djgolan.co.il",
+      "password_hash": "$2b$10$PzXDKliCNROR2PtO7zxNuuaEQtBtizoJANER7BghpPSeEE7JKPQXu",
+      "role": "vendor",
+      "phone": "054-9876543",
+      "created_at": "2026-07-28T15:43:57.450Z"
+    },
+    {
+      "id": 4,
+      "name": "שף דוד פרידמן - קייטרינג",
+      "email": "chef@gourmet.co.il",
+      "password_hash": "$2b$10$PzXDKliCNROR2PtO7zxNuuaEQtBtizoJANER7BghpPSeEE7JKPQXu",
+      "role": "vendor",
+      "phone": "053-5554433",
+      "created_at": "2026-07-28T15:43:57.450Z"
+    },
+    {
+      "id": 5,
+      "name": "גני אליסיה - מקום לאירועים",
+      "email": "info@elysia.co.il",
+      "password_hash": "$2b$10$PzXDKliCNROR2PtO7zxNuuaEQtBtizoJANER7BghpPSeEE7JKPQXu",
+      "role": "vendor",
+      "phone": "050-7778899",
+      "created_at": "2026-07-28T15:43:57.450Z"
+    },
+    {
+      "id": 6,
+      "name": "מיכל כהן (לקוחה)",
+      "email": "michal@gmail.com",
+      "password_hash": "$2b$10$PzXDKliCNROR2PtO7zxNuuaEQtBtizoJANER7BghpPSeEE7JKPQXu",
+      "role": "customer",
+      "phone": "054-1112233",
+      "created_at": "2026-07-28T15:43:57.450Z"
+    }
+  ],
+  "vendors": [
+    {
+      "id": 1,
+      "user_id": 2,
+      "business_name": "סטודיו שחר צילום אירועים",
+      "category": "photography",
+      "description": "צילום סטילס ווידאו אומנותי לאירועים מרגשים. ניסיון של 10 שנים בתחום.",
+      "location": "תל אביב והמרכז",
+      "starting_price": 4500,
+      "is_approved": 1,
+      "cover_image": null,
+      "rating_avg": 4.9,
+      "review_count": 18,
+      "created_at": "2026-07-28T15:43:57.450Z"
+    },
+    {
+      "id": 2,
+      "user_id": 3,
+      "business_name": "DJ Daniel Golan - מוזיקה לאירועים",
+      "category": "dj_music",
+      "description": "סטים ייחודיים שמובילים את הרחבה. מוזיקה מותאמת אישית לכל זוג ואירוע.",
+      "location": "מרכז ושרון",
+      "starting_price": 3800,
+      "is_approved": 1,
+      "cover_image": null,
+      "rating_avg": 4.85,
+      "review_count": 24,
+      "created_at": "2026-07-28T15:43:57.450Z"
+    },
+    {
+      "id": 3,
+      "user_id": 4,
+      "business_name": "גורמה פרידמן - קייטרינג שף",
+      "category": "catering",
+      "description": "חוויה קולינרית בלתי נשכחת. תפריט שף בשרי וצמחוני ברמה הגבוהה ביותר.",
+      "location": "ירושלים והסביבה",
+      "starting_price": 180,
+      "is_approved": 1,
+      "cover_image": null,
+      "rating_avg": 5,
+      "review_count": 12,
+      "created_at": "2026-07-28T15:43:57.450Z"
+    },
+    {
+      "id": 4,
+      "user_id": 5,
+      "business_name": "גני אליסיה - מתחם אירועים קסום",
+      "category": "venue",
+      "description": "מתחם אירועים יוקרתי בלב הטבע עם גן פתוח ואולם מעוצב לעד 500 אורחים.",
+      "location": "שפלה ודרום",
+      "starting_price": 15000,
+      "is_approved": 1,
+      "cover_image": null,
+      "rating_avg": 4.95,
+      "review_count": 30,
+      "created_at": "2026-07-28T15:43:57.450Z"
+    }
+  ],
+  "events": [
+    {
+      "id": 1,
+      "customer_id": 6,
+      "title": "חתונה של מיכל ויונתן",
+      "event_type": "חתונה",
+      "event_date": "2026-09-15",
+      "budget": 80000,
+      "location": "מרכז",
+      "guest_count": 250,
+      "notes": "מחפשים אווירה יוקרתית",
+      "created_at": "2026-07-28T15:43:57.450Z"
+    }
+  ],
+  "bookings": [],
+  "reviews": [],
+  "media": []
+}
