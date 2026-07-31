@@ -10,6 +10,11 @@ async function createEvent(req, res) {
       return res.status(400).json({ message: 'נא למלא שם אירוע, סוג אירוע ותאריך.' });
     }
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (event_date < todayStr) {
+      return res.status(400).json({ message: 'לא ניתן ליצור אירוע בתאריך שכבר עבר.' });
+    }
+
     const eventId = await EventModel.createEvent({
       customer_id,
       title,
@@ -26,6 +31,59 @@ async function createEvent(req, res) {
   } catch (error) {
     console.error('Error in eventController.createEvent:', error);
     res.status(500).json({ message: 'שגיאה ביצירת האירוע.' });
+  }
+}
+
+async function updateEvent(req, res) {
+  try {
+    const customer_id = req.user.id;
+    const { id } = req.params;
+    const { title, event_type, event_date, budget, location, guest_count, notes } = req.body;
+
+    if (!title || !event_type || !event_date) {
+      return res.status(400).json({ message: 'נא למלא שם אירוע, סוג אירוע ותאריך.' });
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (event_date < todayStr) {
+      return res.status(400).json({ message: 'לא ניתן לעדכן אירוע לתאריך שכבר עבר.' });
+    }
+
+    const updated = await EventModel.updateEvent(id, customer_id, {
+      title,
+      event_type,
+      event_date,
+      budget,
+      location,
+      guest_count,
+      notes
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'אירוע לא נמצא או שאינך מורשה לערוך אותו.' });
+    }
+
+    res.json({ message: 'פרטי האירוע עודכנו בהצלחה!' });
+  } catch (error) {
+    console.error('Error in eventController.updateEvent:', error);
+    res.status(500).json({ message: 'שגיאה בעדכון האירוע.' });
+  }
+}
+
+async function deleteEvent(req, res) {
+  try {
+    const customer_id = req.user.id;
+    const { id } = req.params;
+
+    const deleted = await EventModel.deleteEvent(id, customer_id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'אירוע לא נמצא.' });
+    }
+
+    res.json({ message: 'האירוע שנבחר נמחק בהצלחה.' });
+  } catch (error) {
+    console.error('Error in eventController.deleteEvent:', error);
+    res.status(500).json({ message: 'שגיאה במחיקת האירוע.' });
   }
 }
 
@@ -101,6 +159,8 @@ async function updateBookingStatus(req, res) {
 
 module.exports = {
   createEvent,
+  updateEvent,
+  deleteEvent,
   getCustomerEvents,
   createBooking,
   getVendorBookings,

@@ -50,6 +50,8 @@ export const api = {
 
   // Events & Bookings API
   createEvent: (eventData) => fetchAPI('/events', { method: 'POST', body: JSON.stringify(eventData) }),
+  updateEvent: (id, eventData) => fetchAPI(`/events/${id}`, { method: 'PUT', body: JSON.stringify(eventData) }),
+  deleteEvent: (id) => fetchAPI(`/events/${id}`, { method: 'DELETE' }),
   getCustomerEvents: () => fetchAPI('/events/my-events'),
   createBooking: (bookingData) => fetchAPI('/events/book', { method: 'POST', body: JSON.stringify(bookingData) }),
   getVendorBookings: () => fetchAPI('/events/vendor-bookings'),

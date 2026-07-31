@@ -15,6 +15,31 @@ class EventModel {
     }
   }
 
+  static async updateEvent(eventId, customerId, { title, event_type, event_date, budget, location, guest_count, notes }) {
+    try {
+      const [result] = await db.query(
+        `UPDATE events 
+         SET title = ?, event_type = ?, event_date = ?, budget = ?, location = ?, guest_count = ?, notes = ?
+         WHERE id = ? AND customer_id = ?`,
+        [title, event_type, event_date, budget || 0, location, guest_count || 0, notes, eventId, customerId]
+      );
+      return result.affectedRows > 0;
+    } catch (err) {
+      console.error('Error in EventModel.updateEvent:', err.message);
+      throw err;
+    }
+  }
+
+  static async deleteEvent(eventId, customerId) {
+    try {
+      const [result] = await db.query('DELETE FROM events WHERE id = ? AND customer_id = ?', [eventId, customerId]);
+      return result.affectedRows > 0;
+    } catch (err) {
+      console.error('Error in EventModel.deleteEvent:', err.message);
+      throw err;
+    }
+  }
+
   static async getEventsByCustomerId(customerId) {
     try {
       const [rows] = await db.query('SELECT * FROM events WHERE customer_id = ? ORDER BY event_date ASC', [customerId]);

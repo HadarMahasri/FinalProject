@@ -133,6 +133,10 @@ async function getProfile(req, res) {
     let vendorProfile = null;
     if (user.role === 'vendor') {
       vendorProfile = await VendorModel.getVendorByUserId(user.id);
+      if (vendorProfile) {
+        const media = await VendorModel.getVendorMedia(vendorProfile.id);
+        vendorProfile.media = media;
+      }
     }
 
     res.json({ user, vendorProfile });

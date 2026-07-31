@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Store, Upload, Check, X, Calendar, Phone, Mail, FileText, Image as ImageIcon } from 'lucide-react';
+import { Store, Upload, Check, X, Calendar, Phone, Mail, FileText, Image as ImageIcon, Eye } from 'lucide-react';
 
 export default function VendorDashboard() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export default function VendorDashboard() {
         setStartingPrice(profileRes.vendorProfile.starting_price || '');
         setLocation(profileRes.vendorProfile.location || '');
       }
-      setBookings(bookingsRes);
+      setBookings(bookingsRes || []);
     } catch (err) {
       console.error('Failed to load vendor dashboard data:', err);
     } finally {
@@ -93,11 +94,19 @@ export default function VendorDashboard() {
     }
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'תאריך טרם נקבע';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? String(dateStr) : d.toLocaleDateString('he-IL');
+  };
+
+  const mediaList = vendorProfile?.media || [];
+
   return (
     <div className="container" style={{ padding: '40px 20px' }}>
       
       {/* Header Banner */}
-      <div className="glass-card" style={{ padding: '30px', marginBottom: '32px' }}>
+      <div className="glass-card" style={{ padding: '30px', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Store size={28} color="var(--color-secondary)" />
           <div>
@@ -105,56 +114,100 @@ export default function VendorDashboard() {
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>ניהול פניות נכנסות מלקוחות, עדכון מחירון והעלאת תמונות לגלריה</p>
           </div>
         </div>
+
+        {vendorProfile && (
+          <Link to={`/vendors/${vendorProfile.id}`} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Eye size={16} color="var(--color-primary)" /> לצפייה בפרופיל הציבורי שלך
+          </Link>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' }}>
         
-        {/* Bookings Table / List */}
+        {/* Main Left Column: Bookings & My Gallery */}
         <div>
-          <h2 style={{ fontSize: '1.4rem', marginBottom: '20px' }}>פניות נכנסות מלקוחות ({bookings.length})</h2>
+          
+          {/* Bookings Table / List */}
+          <div style={{ marginBottom: '40px' }}>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '20px' }}>פניות נכנסות מלקוחות ({bookings.length})</h2>
 
-          {loading ? (
-            <p style={{ color: 'var(--color-text-muted)' }}>טוען פניות...</p>
-          ) : bookings.length === 0 ? (
-            <div className="glass-card" style={{ padding: '40px', textAlign: 'center' }}>
-              <p style={{ color: 'var(--color-text-muted)' }}>אין פניות נכנסות כרגע.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {bookings.map(b => (
-                <div key={b.id} className="glass-card" style={{ padding: '20px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.2rem', color: 'var(--color-text-main)' }}>{b.event_title} ({b.event_type})</h3>
-                      <p style={{ fontSize: '0.9rem', color: '#fbbf24', fontWeight: 700 }}>
-                        תאריך האירוע: {new Date(b.event_date).toLocaleDateString('he-IL')}
-                      </p>
+            {loading ? (
+              <p style={{ color: 'var(--color-text-muted)' }}>טוען פניות...</p>
+            ) : bookings.length === 0 ? (
+              <div className="glass-card" style={{ padding: '40px', textAlign: 'center' }}>
+                <p style={{ color: 'var(--color-text-muted)' }}>אין פניות נכנסות כרגע.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {bookings.map(b => (
+                  <div key={b.id} className="glass-card" style={{ padding: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.2rem', color: 'var(--color-text-main)' }}>{b.event_title} ({b.event_type})</h3>
+                        <p style={{ fontSize: '0.9rem', color: '#fbbf24', fontWeight: 700 }}>
+                          תאריך האירוע: {formatDate(b.event_date)}
+                        </p>
+                      </div>
+
+                      <span className={`badge ${b.status === 'approved' ? 'badge-success' : b.status === 'declined' ? 'badge-danger' : 'badge-warning'}`}>
+                        {b.status === 'approved' ? 'מאושר' : b.status === 'declined' ? 'נדחה' : 'ממתין לתשובה'}
+                      </span>
                     </div>
 
-                    <span className={`badge ${b.status === 'approved' ? 'badge-success' : b.status === 'declined' ? 'badge-danger' : 'badge-warning'}`}>
-                      {b.status === 'approved' ? 'מאושר' : b.status === 'declined' ? 'נדחה' : 'ממתין לתשובה'}
-                    </span>
-                  </div>
-
-                  <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-                    <p style={{ marginBottom: '4px' }}>שם הלקוח: <b>{b.customer_name}</b> | טלפון: <b>{b.customer_phone || '054-0000000'}</b> | אימייל: <b>{b.customer_email}</b></p>
-                    {b.notes && <p style={{ color: 'var(--color-text-main)', marginTop: '4px' }}>הערות: "{b.notes}"</p>}
-                  </div>
-
-                  {b.status === 'pending' && (
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                      <button onClick={() => handleUpdateStatus(b.id, 'declined')} className="btn btn-secondary btn-sm" style={{ borderColor: 'var(--color-danger)', color: '#f87171' }}>
-                        <X size={14} /> דחה פנייה
-                      </button>
-                      <button onClick={() => handleUpdateStatus(b.id, 'approved')} className="btn btn-primary btn-sm">
-                        <Check size={14} /> אישור הזמנה
-                      </button>
+                    <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
+                      <p style={{ marginBottom: '4px' }}>שם הלקוח: <b>{b.customer_name}</b> | טלפון: <b>{b.customer_phone || '054-0000000'}</b> | אימייל: <b>{b.customer_email || 'לא צוין'}</b></p>
+                      {b.notes && <p style={{ color: 'var(--color-text-main)', marginTop: '4px' }}>הערות: "{b.notes}"</p>}
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {b.status === 'pending' && (
+                      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                        <button onClick={() => handleUpdateStatus(b.id, 'declined')} className="btn btn-secondary btn-sm" style={{ borderColor: 'var(--color-danger)', color: '#f87171' }}>
+                          <X size={14} /> דחה פנייה
+                        </button>
+                        <button onClick={() => handleUpdateStatus(b.id, 'approved')} className="btn btn-primary btn-sm">
+                          <Check size={14} /> אישור הזמנה
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Dedicated My Gallery Section */}
+          <div className="glass-card" style={{ padding: '30px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ImageIcon size={22} color="var(--color-primary)" /> הגלריה שלי ({mediaList.length} תמונות)
+              </h2>
+              {vendorProfile && (
+                <Link to={`/vendors/${vendorProfile.id}`} style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  איך הלקוחות רואים את הגלריה? ←
+                </Link>
+              )}
             </div>
-          )}
+
+            {mediaList.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
+                  טרם העלית תמונות לגלריה. השתמש בטופס הצידי כדי להעלות תמונות ראשונות!
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '14px' }}>
+                {mediaList.map(m => {
+                  const mediaUrl = m.file_path.startsWith('http') ? m.file_path : `http://localhost:5000${m.file_path}`;
+                  return (
+                    <div key={m.id} style={{ height: '120px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
+                      <img src={mediaUrl} alt="תמונת גלריה" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* Sidebar: Media Upload & Profile Edit */}
