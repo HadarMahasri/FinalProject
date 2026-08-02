@@ -67,7 +67,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
 
     setSubmitting(true);
     try {
-      await api.createEvent({
+      const newEventData = {
         title,
         event_type: eventType,
         event_date: eventDate,
@@ -75,16 +75,25 @@ export default function CustomerDashboard({ onOpenAIModal }) {
         location,
         guest_count: Number(guestCount) || 0,
         notes
-      });
+      };
+
+      const res = await api.createEvent(newEventData);
       alert('האירוע נוצר בהצלחה!');
       setShowAddEventModal(false);
+
+      // Optimistic state update - append created event without extra GET call
+      if (res && res.event) {
+        setEvents(prev => [res.event, ...prev]);
+      } else {
+        loadData();
+      }
+
       // Reset form
       setTitle('');
       setEventDate('');
       setBudget('');
       setGuestCount('');
       setNotes('');
-      loadData();
     } catch (err) {
       alert('שגיאה ביצירת האירוע: ' + err.message);
     } finally {
@@ -93,12 +102,11 @@ export default function CustomerDashboard({ onOpenAIModal }) {
   };
 
   const openEditModal = (ev, e) => {
-    e.stopPropagation(); // prevent selecting card
+    e.stopPropagation();
     setEditingEvent(ev);
     setEditTitle(ev.title || '');
     setEditEventType(ev.event_type || 'חתונה');
     
-    // Format date string safely for input type="date"
     let dStr = '';
     if (ev.event_date) {
       const d = new Date(ev.event_date);
@@ -119,20 +127,25 @@ export default function CustomerDashboard({ onOpenAIModal }) {
       return;
     }
 
+    const updatedFields = {
+      title: editTitle,
+      event_type: editEventType,
+      event_date: editEventDate,
+      budget: Number(editBudget) || 0,
+      location: editLocation,
+      guest_count: Number(editGuestCount) || 0,
+      notes: editNotes
+    };
+
     setUpdatingEvent(true);
     try {
-      await api.updateEvent(editingEvent.id, {
-        title: editTitle,
-        event_type: editEventType,
-        event_date: editEventDate,
-        budget: Number(editBudget) || 0,
-        location: editLocation,
-        guest_count: Number(editGuestCount) || 0,
-        notes: editNotes
-      });
+      // Send ONLY modified event fields to backend
+      await api.updateEvent(editingEvent.id, updatedFields);
       alert('פרטי האירוע עודכנו בהצלחה!');
+      
+      // Update local state directly - zero extra GET request
+      setEvents(prev => prev.map(ev => Number(ev.id) === Number(editingEvent.id) ? { ...ev, ...updatedFields } : ev));
       setEditingEvent(null);
-      loadData();
     } catch (err) {
       alert('שגיאה בעדכון האירוע: ' + err.message);
     } finally {
@@ -146,8 +159,10 @@ export default function CustomerDashboard({ onOpenAIModal }) {
     try {
       await api.deleteEvent(eventId);
       alert('האירוע נמחק בהצלחה.');
+      
+      // Update local state directly - zero extra GET request
+      setEvents(prev => prev.filter(ev => Number(ev.id) !== Number(eventId)));
       if (selectedEventId === eventId) setSelectedEventId(null);
-      loadData();
     } catch (err) {
       alert('שגיאה במחיקת האירוע: ' + err.message);
     }
@@ -330,7 +345,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
                     {getStatusBadge(b.status)}
                   </div>
                   <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-                    עבור אירוע: <b>{b.event_title}</b> | טלפון ספק: <b>{b.vendor_phone || '050-0000000'}</b>
+                    עבור אירוע: <b>{b.event_title}</b> | טלפון ספק: <b>{b.vendor_phone || 'טרם עודכן'}</b>
                   </p>
                   {b.notes && <p style={{ fontSize: '0.8rem', color: 'var(--color-text-subtle)', marginTop: '4px' }}>הערות שלך: {b.notes}</p>}
                 </div>

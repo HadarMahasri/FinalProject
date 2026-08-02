@@ -1,14 +1,14 @@
 const VendorModel = require('../models/vendorModel');
-const ReviewModel = require('../models/reviewModel');
+const UserModel = require('../models/userModel');
 
-async function getVendors(req, res) {
+async function getAllVendors(req, res) {
   try {
-    const { category, location, maxPrice } = req.query;
-    const vendors = await VendorModel.getAllVendors({ category, location, maxPrice });
+    const { category, location, max_price, search } = req.query;
+    const vendors = await VendorModel.getAllVendors({ category, location, max_price, search });
     res.json(vendors);
   } catch (error) {
-    console.error('Error in vendorController.getVendors:', error);
-    res.status(500).json({ message: 'שגיאה בשליפת רשימת הספקים.' });
+    console.error('Error in vendorController.getAllVendors:', error);
+    res.status(500).json({ message: 'שגיאה בשליפת קטלוג הספקים.' });
   }
 }
 
@@ -21,10 +21,18 @@ async function getVendorById(req, res) {
     }
 
     const media = await VendorModel.getVendorMedia(id);
-    const reviews = await ReviewModel.getVendorReviews(id);
+    const reviews = await VendorModel.getVendorReviews(id);
+
+    // Synchronize review_count and rating_avg dynamically from actual reviews
+    const reviewCount = reviews.length;
+    const ratingAvg = reviewCount > 0
+      ? (reviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / reviewCount).toFixed(1)
+      : 0;
 
     res.json({
       ...vendor,
+      rating_avg: Number(ratingAvg),
+      review_count: reviewCount,
       media,
       reviews
     });
@@ -42,9 +50,21 @@ async function updateVendorProfile(req, res) {
       return res.status(404).json({ message: 'פרופיל ספק לא נמצא.' });
     }
 
-    await VendorModel.updateVendorProfile(vendor.id, req.body);
-    const updatedVendor = await VendorModel.getVendorById(vendor.id);
-    res.json({ message: 'הפרופיל עודכן בהצלחה!', vendor: updatedVendor });
+    const { description, location, starting_price, business_name, category, phone } = req.body;
+
+    await VendorModel.updateVendorProfile(vendor.id, {
+      description,
+      location,
+      starting_price,
+      business_name,
+      category
+    });
+
+    if (phone !== undefined) {
+      await UserModel.updateUserPhone(userId, phone);
+    }
+
+    res.json({ message: 'פרופיל העסק עודכן בהצלחה!' });
   } catch (error) {
     console.error('Error in vendorController.updateVendorProfile:', error);
     res.status(500).json({ message: 'שגיאה בעדכון פרופיל הספק.' });
@@ -66,7 +86,6 @@ async function uploadMedia(req, res) {
     const filePath = `/uploads/${req.file.filename}`;
     const mediaId = await VendorModel.addMedia(vendor.id, filePath, req.file.mimetype.startsWith('image') ? 'image' : 'document');
 
-    // If vendor has no cover image, set this as cover
     if (!vendor.cover_image) {
       await VendorModel.updateVendorProfile(vendor.id, { cover_image: filePath });
     }
@@ -77,12 +96,12 @@ async function uploadMedia(req, res) {
     });
   } catch (error) {
     console.error('Error in vendorController.uploadMedia:', error);
-    res.status(500).json({ message: 'שגיאה בהעלאת הקובץ.' });
+    res.status(500).json({ message: 'שגיאה בהעלאת קובץ.' });
   }
 }
 
 module.exports = {
-  getVendors,
+  getAllVendors,
   getVendorById,
   updateVendorProfile,
   uploadMedia

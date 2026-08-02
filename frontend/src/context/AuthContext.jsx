@@ -16,8 +16,10 @@ export function AuthProvider({ children }) {
       if (token) {
         try {
           const res = await api.getProfile();
-          setUser(res.user);
-          localStorage.setItem('eventhub_user', JSON.stringify(res.user));
+          if (res && res.user) {
+            setUser(res.user);
+            localStorage.setItem('eventhub_user', JSON.stringify(res.user));
+          }
         } catch (err) {
           console.warn('Token expired or invalid. Logging out.');
           logout();
@@ -53,8 +55,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('eventhub_user');
   };
 
+  const isAuthenticated = Boolean(user || token);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

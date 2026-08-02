@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Star, MapPin, Tag, Phone, Mail, Calendar, Send, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import { Star, MapPin, Phone, Calendar, Image as ImageIcon, CheckCircle, AlertTriangle, MessageSquare, Store, Eye } from 'lucide-react';
 
 const categoryLabels = {
-  photography: 'צילום אירועים',
-  dj_music: 'תקליטן & מוזיקה',
-  catering: 'קייטרינג & שף',
-  venue: 'אולמות & גנים',
-  design_flowers: 'עיצוב & פרחים',
-  other: 'שירותים נוספים'
+  photography: 'צלמים וסטודיו',
+  dj_music: 'תקליטנים ומוזיקה',
+  catering: 'קייטרינג ושפים',
+  venue: 'גני אירועים ואולמות',
+  design_flowers: 'עיצוב אירועים ופרחים',
+  other: 'אטרקציות ובידור'
 };
 
 export default function VendorDetailsPage() {
   const { id } = useParams();
-  const { user } = useAuth();
   const navigate = useNavigate();
+  const { isAuthenticated, user, token } = useAuth();
 
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Booking Modal State
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -28,61 +29,74 @@ export default function VendorDetailsPage() {
   const [bookingNotes, setBookingNotes] = useState('');
   const [bookingSubmitting, setBookingSubmitting] = useState(false);
 
-  // Review State
+  // Review Form State
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
-  const loadVendorDetails = async () => {
-    try {
-      const data = await api.getVendorById(id);
-      setVendor(data);
-    } catch (err) {
-      console.error('Failed to load vendor details:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const isUserLoggedIn = Boolean(user || token || isAuthenticated);
+  const isVendorAccount = user?.role === 'vendor';
+  const isCustomerAccount = user?.role === 'customer' || !user?.role;
 
   useEffect(() => {
+    async function loadVendorDetails() {
+      try {
+        setLoading(true);
+        const data = await api.getVendorById(id);
+        setVendor(data);
+      } catch (err) {
+        console.error('Failed to load vendor:', err);
+        setError('שגיאה בטעינת פרטי הספק.');
+      } finally {
+        setLoading(false);
+      }
+    }
     loadVendorDetails();
   }, [id]);
 
   const handleOpenBooking = async () => {
-    if (!user) {
+    if (!isUserLoggedIn) {
+      alert('נא להתחבר למערכת כדי לשלוח בקשת תיאום לספק.');
       navigate('/login');
       return;
     }
-    if (user.role !== 'customer') {
-      alert('רק לקוח רשום יכול לשלוח בקשת הזמנה לספק.');
+
+    if (isVendorAccount) {
+      alert('חשבון ספק מיועד לצפייה וניהול עסק בלבד. שליחת בקשות תיאום מיועדת לחשבון לקוח.');
       return;
     }
+
     try {
       const events = await api.getCustomerEvents();
-      setCustomerEvents(events);
-      if (events.length > 0) setSelectedEventId(events[0].id);
+      setCustomerEvents(events || []);
+      if (events && events.length > 0) {
+        setSelectedEventId(events[0].id);
+      }
       setShowBookingModal(true);
     } catch (err) {
-      alert('שגיאה בשליפת האירועים שלך: ' + err.message);
+      alert('שגיאה בטעינת רשימת האירועים שלך: ' + err.message);
     }
   };
 
   const handleSendBooking = async (e) => {
     e.preventDefault();
     if (!selectedEventId) {
-      alert('נא לבחור אירוע או ליצור אירוע חדש בדשבורד.');
+      alert('נא לבחור אירוע מתוך הרשימה.');
       return;
     }
+
     setBookingSubmitting(true);
     try {
-      await api.createBooking({
-        event_id: selectedEventId,
-        vendor_id: vendor.id,
+      const res = await api.createBooking({
+        event_id: Number(selectedEventId),
+        vendor_id: Number(vendor.id),
         notes: bookingNotes,
         agreed_price: vendor.starting_price
       });
-      alert('בקשת הצעת המחיר נשלחה לספק בהצלחה!');
+
+      alert(res.message || 'בקשת התיאום נשלחה לספק בהצלחה!');
       setShowBookingModal(false);
+      setBookingNotes('');
     } catch (err) {
       alert('שגיאה בשליחת הבקשה: ' + err.message);
     } finally {
@@ -92,33 +106,59 @@ export default function VendorDetailsPage() {
 
   const handleAddReview = async (e) => {
     e.preventDefault();
-    if (!user) {
+    if (!isUserLoggedIn) {
+      alert('נא להתחבר כדי להוסיף ביקורת.');
       navigate('/login');
       return;
     }
-    setReviewSubmitting(true);
+
+    setSubmittingReview(true);
     try {
-      await api.addReview({
-        vendor_id: vendor.id,
+      await api.createReview({
+        vendor_id: Number(vendor.id),
         rating: Number(rating),
         comment
       });
-      alert('תודה! חוות הדעת שלך נוספה בהצלחה.');
+      alert('תודה על חוות הדעת! הביקורת נוספה בהצלחה.');
       setComment('');
-      loadVendorDetails();
+      
+      // Reload vendor data to update reviews list and live score
+      const updatedVendor = await api.getVendorById(id);
+      setVendor(updatedVendor);
     } catch (err) {
       alert('שגיאה בהוספת הביקורת: ' + err.message);
     } finally {
-      setReviewSubmitting(false);
+      setSubmittingReview(false);
     }
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '80px 0' }}><span className="gradient-text">טוען פרטי ספק...</span></div>;
-  if (!vendor) return <div style={{ textAlign: 'center', padding: '80px 0' }}><h2>ספק לא נמצא.</h2></div>;
+  if (loading) {
+    return (
+      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>טוען את פרטי הספק...</p>
+      </div>
+    );
+  }
 
-  const coverImg = vendor.cover_image 
-    ? (vendor.cover_image.startsWith('http') ? vendor.cover_image : `http://localhost:5000${vendor.cover_image}`)
+  if (error || !vendor) {
+    return (
+      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <h2 style={{ color: 'var(--color-danger)', marginBottom: '16px' }}>{error || 'ספק לא נמצא במערכת.'}</h2>
+        <button onClick={() => navigate('/vendors')} className="btn btn-primary">חזרה לקטלוג הספקים</button>
+      </div>
+    );
+  }
+
+  const coverImg = vendor.cover_image
+    ? vendor.cover_image
     : `https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80`;
+
+  // Selected Event & Budget Analysis for Booking Modal
+  const selectedEvent = customerEvents.find(e => Number(e.id) === Number(selectedEventId));
+  const eventBudget = Number(selectedEvent?.budget) || 0;
+  const vendorPrice = Number(vendor.starting_price) || 0;
+  const isOverBudget = eventBudget > 0 && vendorPrice > eventBudget;
+  const budgetDifference = Math.abs(vendorPrice - eventBudget);
 
   return (
     <div className="container" style={{ padding: '40px 20px' }}>
@@ -140,7 +180,7 @@ export default function VendorDetailsPage() {
               <h1 style={{ fontSize: '2.2rem', color: '#fff' }}>{vendor.business_name}</h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-muted)', marginTop: '6px' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={16} color="var(--color-primary)" /> {vendor.location}</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={16} color="var(--color-success)" /> {vendor.phone || '050-0000000'}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={16} color="var(--color-success)" /> {vendor.phone || 'טרם עודכן'}</span>
               </div>
             </div>
 
@@ -150,9 +190,16 @@ export default function VendorDetailsPage() {
                 <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fbbf24' }}>₪{Number(vendor.starting_price).toLocaleString()}</span>
               </div>
 
-              <button onClick={handleOpenBooking} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1.05rem' }}>
-                <Calendar size={18} /> שלח בקשת תיאום
-              </button>
+              {isVendorAccount ? (
+                <div style={{ background: 'rgba(124, 58, 237, 0.2)', padding: '10px 16px', borderRadius: '12px', border: '1px solid var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                  <Eye size={18} color="var(--color-primary)" />
+                  <span>מצב צפייה כספק</span>
+                </div>
+              ) : (
+                <button onClick={handleOpenBooking} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1.05rem' }}>
+                  <Calendar size={18} /> שלח בקשת תיאום
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -178,14 +225,14 @@ export default function VendorDetailsPage() {
             </h2>
 
             {(!vendor.media || vendor.media.length === 0) ? (
-              <p style={{ color: 'var(--color-text-subtle)' }}>טרם הועלו תמונות לגלריה.</p>
+              <p style={{ color: 'var(--color-text-muted)' }}>טרם הועלו תמונות לגלריית העסק.</p>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '16px' }}>
                 {vendor.media.map(m => {
-                  const mediaUrl = m.file_path.startsWith('http') ? m.file_path : `http://localhost:5000${m.file_path}`;
+                  const imgUrl = m.file_path;
                   return (
-                    <div key={m.id} style={{ height: '140px', borderRadius: '10px', overflow: 'hidden' }}>
-                      <img src={mediaUrl} alt="גלריית ספק" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div key={m.id} style={{ height: '150px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                      <img src={imgUrl} alt="גלריה" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   );
                 })}
@@ -195,78 +242,92 @@ export default function VendorDetailsPage() {
 
           {/* Customer Reviews Section */}
           <div className="glass-card" style={{ padding: '30px' }}>
-            <h2 style={{ fontSize: '1.4rem', marginBottom: '20px' }}>חוות דעת ודירוגים ({vendor.reviews ? vendor.reviews.length : 0})</h2>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquare size={20} color="#fbbf24" /> חוות דעת של לקוחות ({vendor.reviews?.length || 0})
+            </h2>
 
-            {/* Add Review Form */}
-            {user && user.role === 'customer' && (
-              <form onSubmit={handleAddReview} style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '20px', borderRadius: '12px', marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '1rem', marginBottom: '12px' }}>הוסף חוות דעת על הספק</h3>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                  <label style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>דירוג:</label>
-                  <select className="form-select" value={rating} onChange={e => setRating(e.target.value)} style={{ width: 'auto' }}>
-                    <option value="5">⭐⭐⭐⭐⭐ (5 - מעולה)</option>
-                    <option value="4">⭐⭐⭐⭐ (4 - טוב מאוד)</option>
-                    <option value="3">⭐⭐⭐ (3 - בסדר)</option>
-                    <option value="2">⭐⭐ (2 - טעון שיפור)</option>
-                    <option value="1">⭐ (1 - לא מומלץ)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <textarea 
-                    className="form-textarea" 
-                    rows="3" 
-                    placeholder="שתף את החוויה שלך..." 
-                    value={comment} 
-                    onChange={e => setComment(e.target.value)} 
-                    required 
-                  />
-                </div>
-
-                <button type="submit" className="btn btn-primary btn-sm" disabled={reviewSubmitting}>
-                  <Send size={14} /> {reviewSubmitting ? 'שולח...' : 'פרסם חוות דעת'}
-                </button>
-              </form>
-            )}
-
-            {/* List Reviews */}
             {(!vendor.reviews || vendor.reviews.length === 0) ? (
-              <p style={{ color: 'var(--color-text-subtle)' }}>עדיין אין ביקורות עבור ספק זה. היו הראשונים לדרג!</p>
+              <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>טרם נכתבו חוות דעת עבור ספק זה.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {vendor.reviews.map(rev => (
-                  <div key={rev.id} style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '10px', border: '1px solid var(--color-border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{rev.customer_name}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+                {vendor.reviews.map(r => (
+                  <div key={r.id} style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontWeight: 700, color: 'var(--color-text-main)' }}>{r.customer_name || 'לקוח מאומת'}</span>
                       <div style={{ display: 'flex', gap: '2px' }}>
-                        {[...Array(rev.rating)].map((_, i) => (
-                          <Star key={i} size={14} color="#f59e0b" fill="#f59e0b" />
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={14} color={i < r.rating ? '#fbbf24' : '#475569'} fill={i < r.rating ? '#fbbf24' : 'none'} />
                         ))}
                       </div>
                     </div>
-                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>{rev.comment}</p>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-subtle)', marginTop: '6px', display: 'block' }}>
-                      {new Date(rev.created_at).toLocaleDateString('he-IL')}
-                    </span>
+                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: 1.6 }}>"{r.comment}"</p>
                   </div>
                 ))}
               </div>
             )}
 
+            {/* Add Review Form for Customers */}
+            {isUserLoggedIn && isCustomerAccount && (
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px border var(--color-border)' }}>
+                <h3 style={{ fontSize: '1.1rem', marginBottom: '14px' }}>הוסף חוות דעת ודירוג</h3>
+                
+                <form onSubmit={handleAddReview} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div className="form-group">
+                    <label className="form-label">דירוג באירוע (1 עד 5 כוכבים)</label>
+                    <select className="form-select" value={rating} onChange={e => setRating(e.target.value)}>
+                      <option value={5}>⭐⭐⭐⭐⭐ (5 - מעולה ביותר)</option>
+                      <option value={4}>⭐⭐⭐⭐ (4 - טוב מאוד)</option>
+                      <option value={3}>⭐⭐⭐ (3 - בינוני)</option>
+                      <option value={2}>⭐⭐ (2 - לא מספק)</option>
+                      <option value={1}>⭐ (1 - גרוע)</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">תוכן חוות הדעת שלך</label>
+                    <textarea 
+                      className="form-textarea" 
+                      rows="3" 
+                      value={comment} 
+                      onChange={e => setComment(e.target.value)} 
+                      placeholder="ספר על השירות, העמידה בזמנים והחוויה מהאירוע שלך..." 
+                      required 
+                    />
+                  </div>
+
+                  <button type="submit" className="btn btn-gold btn-sm" disabled={submittingReview}>
+                    {submittingReview ? 'מוסיף...' : 'פרסם חוות דעת'}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
 
         </div>
 
-        {/* Sidebar Summary & Contact */}
+        {/* Sidebar Actions & Vendor Summary */}
         <div>
           <div className="glass-card" style={{ padding: '24px', position: 'sticky', top: '90px' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>סיכום ואישור ספק</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle size={16} color="var(--color-success)" />
-                <span>פרופיל מאושר ומאומת במערכת</span>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>סיכום פרטי ספק</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>דירוג ממוצע:</span>
+                <span style={{ fontWeight: 700, color: '#fbbf24' }}>
+                  {vendor.review_count > 0 ? `${Number(vendor.rating_avg).toFixed(1)} ⭐ (${vendor.review_count} מדרגים)` : 'טרם נכתבו ביקורות (0 מדרגים)'}
+                </span>
               </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>אזור פעילות:</span>
+                <span style={{ fontWeight: 600 }}>{vendor.location}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>מחיר פתיחה:</span>
+                <span style={{ fontWeight: 800, color: '#fbbf24' }}>₪{Number(vendor.starting_price).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle size={16} color="var(--color-success)" />
                 <span>מענה מהיר לבקשות תיאום</span>
@@ -277,9 +338,16 @@ export default function VendorDetailsPage() {
               </div>
             </div>
 
-            <button onClick={handleOpenBooking} className="btn btn-primary" style={{ width: '100%' }}>
-              <Calendar size={18} /> שלח בקשת תיאום
-            </button>
+            {isVendorAccount ? (
+              <div style={{ textAlign: 'center', padding: '12px', background: 'rgba(124, 58, 237, 0.1)', borderRadius: '10px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                <Store size={16} color="var(--color-primary)" style={{ verticalAlign: 'middle', marginLeft: '4px' }} />
+                מצב צפייה בספק כקולגה
+              </div>
+            ) : (
+              <button onClick={handleOpenBooking} className="btn btn-primary" style={{ width: '100%' }}>
+                <Calendar size={18} /> שלח בקשת תיאום
+              </button>
+            )}
           </div>
         </div>
 
@@ -302,10 +370,30 @@ export default function VendorDetailsPage() {
                   <label className="form-label">בחר אירוע מתוך החשבון שלך</label>
                   <select className="form-select" value={selectedEventId} onChange={e => setSelectedEventId(e.target.value)}>
                     {customerEvents.map(ev => (
-                      <option key={ev.id} value={ev.id}>{ev.title} ({new Date(ev.event_date).toLocaleDateString('he-IL')})</option>
+                      <option key={ev.id} value={ev.id}>{ev.title} (תקציב: ₪{Number(ev.budget).toLocaleString()})</option>
                     ))}
                   </select>
                 </div>
+
+                {/* Smart Budget Analysis & Alert Badge */}
+                {selectedEvent && eventBudget > 0 && (
+                  <div style={{
+                    padding: '14px',
+                    borderRadius: '10px',
+                    background: isOverBudget ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                    border: `1px solid ${isOverBudget ? '#ef4444' : '#10b981'}`,
+                    fontSize: '0.88rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 700, color: isOverBudget ? '#f87171' : '#34d399' }}>
+                      {isOverBudget ? <AlertTriangle size={18} color="#ef4444" /> : <CheckCircle size={18} color="#10b981" />}
+                      <span>{isOverBudget ? 'התראת חריגה מתקציב האירוע!' : 'הפנייה תואמת את מסגרת התקציב'}</span>
+                    </div>
+                    <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
+                      תקציב מתוכנן לאירוע: <b>₪{eventBudget.toLocaleString()}</b> | מחיר פתיחה של הספק: <b>₪{vendorPrice.toLocaleString()}</b>
+                      {isOverBudget && <span style={{ display: 'block', marginTop: '4px', color: '#f87171', fontWeight: 600 }}>חריגה מוערכת: ₪{budgetDifference.toLocaleString()} (ניתן עדיין לשלוח פנייה ולבקש הצעת מחיר מותאמת אישית).</span>}
+                    </p>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label className="form-label">הערות / בקשות מיוחדות לספק</label>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Store, Upload, Check, X, Calendar, Phone, Mail, FileText, Image as ImageIcon, Eye } from 'lucide-react';
+import { Store, Upload, Check, X, Calendar, Phone, Mail, FileText, Image as ImageIcon, Eye, TrendingUp, CheckCircle2, DollarSign, Star, PieChart } from 'lucide-react';
 
 export default function VendorDashboard() {
   const { user } = useAuth();
@@ -11,6 +11,7 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Edit Profile Form State
+  const [phone, setPhone] = useState('');
   const [description, setDescription] = useState('');
   const [startingPrice, setStartingPrice] = useState('');
   const [location, setLocation] = useState('');
@@ -28,6 +29,8 @@ export default function VendorDashboard() {
         api.getVendorBookings()
       ]);
       setVendorProfile(profileRes.vendorProfile);
+      setPhone(profileRes.user?.phone || profileRes.vendorProfile?.phone || '');
+
       if (profileRes.vendorProfile) {
         setDescription(profileRes.vendorProfile.description || '');
         setStartingPrice(profileRes.vendorProfile.starting_price || '');
@@ -49,7 +52,7 @@ export default function VendorDashboard() {
     try {
       await api.updateBookingStatus(bookingId, newStatus);
       alert(`סטטוס הבקשה עודכן ל-${newStatus === 'approved' ? 'אושר' : 'נדחה'}`);
-      loadVendorData();
+      setBookings(prev => prev.map(b => Number(b.id) === Number(bookingId) ? { ...b, status: newStatus } : b));
     } catch (err) {
       alert('שגיאה בעדכון הסטטוס: ' + err.message);
     }
@@ -58,14 +61,18 @@ export default function VendorDashboard() {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setUpdatingProfile(true);
+
+    const updatedFields = {
+      phone,
+      description,
+      starting_price: Number(startingPrice),
+      location
+    };
+
     try {
-      await api.updateVendorProfile({
-        description,
-        starting_price: Number(startingPrice),
-        location
-      });
-      alert('פרופיל העסק עודכן בהצלחה!');
-      loadVendorData();
+      await api.updateVendorProfile(updatedFields);
+      alert('פרטי העסק והטלפון עודכנו בהצלחה!');
+      setVendorProfile(prev => ({ ...prev, ...updatedFields }));
     } catch (err) {
       alert('שגיאה בעדכון הפרופיל: ' + err.message);
     } finally {
@@ -83,10 +90,18 @@ export default function VendorDashboard() {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      await api.uploadMedia(formData);
+      const res = await api.uploadMedia(formData);
       alert('התמונה הועלתה בהצלחה לגלריה!');
       setSelectedFile(null);
-      loadVendorData();
+
+      if (res && res.media) {
+        setVendorProfile(prev => ({
+          ...prev,
+          media: [res.media, ...(prev?.media || [])]
+        }));
+      } else {
+        loadVendorData();
+      }
     } catch (err) {
       alert('שגיאה בהעלאת התמונה: ' + err.message);
     } finally {
@@ -102,16 +117,23 @@ export default function VendorDashboard() {
 
   const mediaList = vendorProfile?.media || [];
 
+  // Business Analytics & Statistics Calculations
+  const totalBookings = bookings.length;
+  const approvedBookings = bookings.filter(b => b.status === 'approved');
+  const pendingBookings = bookings.filter(b => b.status === 'pending');
+  const totalRevenue = approvedBookings.reduce((sum, b) => sum + (Number(b.agreed_price) || 0), 0);
+  const acceptanceRate = totalBookings > 0 ? Math.round((approvedBookings.length / totalBookings) * 100) : 0;
+
   return (
     <div className="container" style={{ padding: '40px 20px' }}>
       
       {/* Header Banner */}
-      <div className="glass-card" style={{ padding: '30px', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="glass-card" style={{ padding: '30px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Store size={28} color="var(--color-secondary)" />
           <div>
             <h1 style={{ fontSize: '1.8rem', marginBottom: '2px' }}>אזור ניהול ספק - {vendorProfile?.business_name || user.name}</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>ניהול פניות נכנסות מלקוחות, עדכון מחירון והעלאת תמונות לגלריה</p>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>ניהול פניות נכנסות מלקוחות, אנליטיקת עסק, עדכון מחירון וגלריה</p>
           </div>
         </div>
 
@@ -120,6 +142,49 @@ export default function VendorDashboard() {
             <Eye size={16} color="var(--color-primary)" /> לצפייה בפרופיל הציבורי שלך
           </Link>
         )}
+      </div>
+
+      {/* Visual Analytics & Reports KPI Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+        <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ background: 'rgba(124, 58, 237, 0.2)', padding: '12px', borderRadius: '12px' }}>
+            <TrendingUp size={24} color="var(--color-primary)" />
+          </div>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>סה"כ פניות נכנסות</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-main)' }}>{totalBookings}</span>
+          </div>
+        </div>
+
+        <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ background: 'rgba(16, 185, 129, 0.2)', padding: '12px', borderRadius: '12px' }}>
+            <CheckCircle2 size={24} color="#10b981" />
+          </div>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>פניות שאושרו (אחוז סגירה)</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{approvedBookings.length} ({acceptanceRate}%)</span>
+          </div>
+        </div>
+
+        <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ background: 'rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '12px' }}>
+            <DollarSign size={24} color="#fbbf24" />
+          </div>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>צפי הכנסות מאירועים</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fbbf24' }}>₪{totalRevenue.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ background: 'rgba(236, 72, 153, 0.2)', padding: '12px', borderRadius: '12px' }}>
+            <Star size={24} color="#ec4899" />
+          </div>
+          <div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>דירוג ממוצע בעסק</span>
+            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ec4899' }}>{Number(vendorProfile?.rating_avg || 5.0).toFixed(1)} ⭐</span>
+          </div>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' }}>
@@ -155,7 +220,7 @@ export default function VendorDashboard() {
                     </div>
 
                     <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-                      <p style={{ marginBottom: '4px' }}>שם הלקוח: <b>{b.customer_name}</b> | טלפון: <b>{b.customer_phone || '054-0000000'}</b> | אימייל: <b>{b.customer_email || 'לא צוין'}</b></p>
+                      <p style={{ marginBottom: '4px' }}>שם הלקוח: <b>{b.customer_name}</b> | טלפון: <b>{b.customer_phone || 'טרם עודכן'}</b> | אימייל: <b>{b.customer_email || 'לא צוין'}</b></p>
                       {b.notes && <p style={{ color: 'var(--color-text-main)', marginTop: '4px' }}>הערות: "{b.notes}"</p>}
                     </div>
 
@@ -197,7 +262,7 @@ export default function VendorDashboard() {
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '14px' }}>
                 {mediaList.map(m => {
-                  const mediaUrl = m.file_path.startsWith('http') ? m.file_path : `http://localhost:5000${m.file_path}`;
+                  const mediaUrl = m.file_path;
                   return (
                     <div key={m.id} style={{ height: '120px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
                       <img src={mediaUrl} alt="תמונת גלריה" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -238,9 +303,20 @@ export default function VendorDashboard() {
 
           {/* Quick Profile Edit */}
           <div className="glass-card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>עדכון פרטי עסק</h3>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>עדכון פרטי עסק וטלפון</h3>
             
             <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="form-group">
+                <label className="form-label">מספר טלפון ליצירת קשר</label>
+                <input 
+                  type="tel" 
+                  className="form-input" 
+                  value={phone} 
+                  onChange={e => setPhone(e.target.value)} 
+                  placeholder="050-1234567"
+                />
+              </div>
+
               <div className="form-group">
                 <label className="form-label">מחיר פתיחה מוערך (₪)</label>
                 <input type="number" className="form-input" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} />

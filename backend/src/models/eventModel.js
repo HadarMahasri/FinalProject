@@ -15,14 +15,23 @@ class EventModel {
     }
   }
 
-  static async updateEvent(eventId, customerId, { title, event_type, event_date, budget, location, guest_count, notes }) {
+  static async updateEvent(eventId, customerId, data) {
     try {
-      const [result] = await db.query(
-        `UPDATE events 
-         SET title = ?, event_type = ?, event_date = ?, budget = ?, location = ?, guest_count = ?, notes = ?
-         WHERE id = ? AND customer_id = ?`,
-        [title, event_type, event_date, budget || 0, location, guest_count || 0, notes, eventId, customerId]
-      );
+      const fields = [];
+      const values = [];
+
+      if (data.title !== undefined) { fields.push('title = ?'); values.push(data.title); }
+      if (data.event_type !== undefined) { fields.push('event_type = ?'); values.push(data.event_type); }
+      if (data.event_date !== undefined) { fields.push('event_date = ?'); values.push(data.event_date); }
+      if (data.budget !== undefined) { fields.push('budget = ?'); values.push(data.budget); }
+      if (data.location !== undefined) { fields.push('location = ?'); values.push(data.location); }
+      if (data.guest_count !== undefined) { fields.push('guest_count = ?'); values.push(data.guest_count); }
+      if (data.notes !== undefined) { fields.push('notes = ?'); values.push(data.notes); }
+
+      if (fields.length === 0) return true;
+
+      values.push(eventId, customerId);
+      const [result] = await db.query(`UPDATE events SET ${fields.join(', ')} WHERE id = ? AND customer_id = ?`, values);
       return result.affectedRows > 0;
     } catch (err) {
       console.error('Error in EventModel.updateEvent:', err.message);

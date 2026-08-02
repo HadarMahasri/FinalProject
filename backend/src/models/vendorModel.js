@@ -4,9 +4,18 @@ class VendorModel {
   static async getAllVendors(filters = {}) {
     try {
       let query = `
-        SELECT v.*, u.name as owner_name, u.email, u.phone 
+        SELECT 
+          v.id, v.user_id, v.business_name, v.category, v.description, v.location, v.starting_price, v.is_approved, v.cover_image, v.created_at,
+          u.name as owner_name, u.email, u.phone,
+          COALESCE(r.review_count, 0) as review_count,
+          COALESCE(ROUND(r.rating_avg, 2), 0.00) as rating_avg
         FROM vendors v 
         JOIN users u ON v.user_id = u.id 
+        LEFT JOIN (
+          SELECT vendor_id, COUNT(*) as review_count, AVG(rating) as rating_avg 
+          FROM reviews 
+          GROUP BY vendor_id
+        ) r ON v.id = r.vendor_id
         WHERE 1=1
       `;
       const queryParams = [];
@@ -33,7 +42,7 @@ class VendorModel {
         query += ' AND v.is_approved = TRUE'; // Default to showing only approved
       }
 
-      query += ' ORDER BY v.rating_avg DESC, v.created_at DESC';
+      query += ' ORDER BY rating_avg DESC, v.created_at DESC';
 
       const [rows] = await db.query(query, queryParams);
       return rows;
@@ -46,9 +55,18 @@ class VendorModel {
   static async getVendorById(id) {
     try {
       const [rows] = await db.query(
-        `SELECT v.*, u.name as owner_name, u.email, u.phone 
+        `SELECT 
+           v.id, v.user_id, v.business_name, v.category, v.description, v.location, v.starting_price, v.is_approved, v.cover_image, v.created_at,
+           u.name as owner_name, u.email, u.phone,
+           COALESCE(r.review_count, 0) as review_count,
+           COALESCE(ROUND(r.rating_avg, 2), 0.00) as rating_avg
          FROM vendors v 
          JOIN users u ON v.user_id = u.id 
+         LEFT JOIN (
+           SELECT vendor_id, COUNT(*) as review_count, AVG(rating) as rating_avg 
+           FROM reviews 
+           GROUP BY vendor_id
+         ) r ON v.id = r.vendor_id
          WHERE v.id = ?`,
         [id]
       );
@@ -88,18 +106,36 @@ class VendorModel {
       const fields = [];
       const values = [];
 
-      if (data.business_name) { fields.push('business_name = ?'); values.push(data.business_name); }
-      if (data.category) { fields.push('category = ?'); values.push(data.category); }
-      if (data.description) { fields.push('description = ?'); values.push(data.description); }
-      if (data.location) { fields.push('location = ?'); values.push(data.location); }
-      if (data.starting_price !== undefined) { fields.push('starting_price = ?'); values.push(data.starting_price); }
-      if (data.cover_image) { fields.push('cover_image = ?'); values.push(data.cover_image); }
-      if (data.is_approved !== undefined) { fields.push('is_approved = ?'); values.push(data.is_approved); }
+      if (data.description !== undefined) {
+        fields.push('description = ?');
+        values.push(data.description);
+      }
+      if (data.location !== undefined) {
+        fields.push('location = ?');
+        values.push(data.location);
+      }
+      if (data.starting_price !== undefined) {
+        fields.push('starting_price = ?');
+        values.push(data.starting_price);
+      }
+      if (data.business_name !== undefined) {
+        fields.push('business_name = ?');
+        values.push(data.business_name);
+      }
+      if (data.category !== undefined) {
+        fields.push('category = ?');
+        values.push(data.category);
+      }
+      if (data.cover_image !== undefined) {
+        fields.push('cover_image = ?');
+        values.push(data.cover_image);
+      }
 
-      if (fields.length === 0) return true;
+      if (fields.length === 0) return false;
 
       values.push(vendorId);
-      await db.query(`UPDATE vendors SET ${fields.join(', ')} WHERE id = ?`, values);
+      const sql = `UPDATE vendors SET ${fields.join(', ')} WHERE id = ?`;
+      await db.query(sql, values);
       return true;
     } catch (err) {
       console.error('Error in VendorModel.updateVendorProfile:', err.message);
@@ -126,6 +162,23 @@ class VendorModel {
       return rows;
     } catch (err) {
       console.error('Error in VendorModel.getVendorMedia:', err.message);
+      return [];
+    }
+  }
+
+  static async getVendorReviews(vendorId) {
+    try {
+      const [rows] = await db.query(
+        `SELECT r.*, u.name as customer_name 
+         FROM reviews r 
+         JOIN users u ON r.customer_id = u.id 
+         WHERE r.vendor_id = ? 
+         ORDER BY r.created_at DESC`,
+        [vendorId]
+      );
+      return rows;
+    } catch (err) {
+      console.error('Error in VendorModel.getVendorReviews:', err.message);
       return [];
     }
   }
