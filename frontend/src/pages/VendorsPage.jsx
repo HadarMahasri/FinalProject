@@ -14,16 +14,44 @@ export default function VendorsPage() {
   const [location, setLocation] = useState(searchParams.get('location') || '');
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
 
+  // Debounced filter states to prevent excessive backend request spamming
+  const [debouncedLocation, setDebouncedLocation] = useState(location);
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = useState(maxPrice);
+
+  // Debounce Location change (400ms delay)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedLocation(location);
+    }, 400);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [location]);
+
+  // Debounce Max Price change (400ms delay)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedMaxPrice(maxPrice);
+    }, 400);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [maxPrice]);
+
   const loadVendors = async () => {
     setLoading(true);
     try {
       const params = {};
       if (category && category !== 'all') params.category = category;
-      if (location) params.location = location;
-      if (maxPrice) params.maxPrice = maxPrice;
+      if (debouncedLocation) params.location = debouncedLocation;
+      
+      // Fix maxPrice vs max_price query parameter mismatch with backend
+      if (debouncedMaxPrice) params.max_price = debouncedMaxPrice;
 
       const data = await api.getVendors(params);
-      setVendors(data);
+      setVendors(data || []);
     } catch (err) {
       console.error('Failed to fetch vendors:', err);
     } finally {
@@ -33,7 +61,7 @@ export default function VendorsPage() {
 
   useEffect(() => {
     loadVendors();
-  }, [category, location, maxPrice]);
+  }, [category, debouncedLocation, debouncedMaxPrice]);
 
   const handleClearFilters = () => {
     setCategory('all');
