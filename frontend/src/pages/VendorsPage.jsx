@@ -27,10 +27,10 @@ export default function VendorsPage() {
     try {
       const params = { limit: PAGE_SIZE, page: 1 };
       if (category && category !== 'all') params.category = category;
-      if (debouncedLocation) params.location = debouncedLocation;
-      
+      if (location) params.location = location;
+
       // Fix maxPrice vs max_price query parameter mismatch with backend
-      if (debouncedMaxPrice) params.max_price = debouncedMaxPrice;
+      if (maxPrice) params.max_price = maxPrice;
 
       const res = await getVendorsCached(params);
 
