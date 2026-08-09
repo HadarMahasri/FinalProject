@@ -27,20 +27,35 @@ class TaskModel {
     }
   }
 
-  static async toggleTask(taskId, isCompleted) {
+  // Ownership-scoped toggle: only updates a task if it actually belongs to
+  // an event owned by customerId. affectedRows === 0 means either the task
+  // doesn't exist or it belongs to someone else.
+  static async toggleTask(taskId, isCompleted, customerId) {
     try {
-      await db.query('UPDATE event_tasks SET is_completed = ? WHERE id = ?', [isCompleted, taskId]);
-      return true;
+      const [result] = await db.query(
+        `UPDATE event_tasks et
+         JOIN events e ON et.event_id = e.id
+         SET et.is_completed = ?
+         WHERE et.id = ? AND e.customer_id = ?`,
+        [isCompleted, taskId, customerId]
+      );
+      return result.affectedRows > 0;
     } catch (err) {
       console.error('Error in TaskModel.toggleTask:', err.message);
       throw err;
     }
   }
 
-  static async deleteTask(taskId) {
+  // Ownership-scoped delete — same guarantee as toggleTask above.
+  static async deleteTask(taskId, customerId) {
     try {
-      await db.query('DELETE FROM event_tasks WHERE id = ?', [taskId]);
-      return true;
+      const [result] = await db.query(
+        `DELETE et FROM event_tasks et
+         JOIN events e ON et.event_id = e.id
+         WHERE et.id = ? AND e.customer_id = ?`,
+        [taskId, customerId]
+      );
+      return result.affectedRows > 0;
     } catch (err) {
       console.error('Error in TaskModel.deleteTask:', err.message);
       throw err;

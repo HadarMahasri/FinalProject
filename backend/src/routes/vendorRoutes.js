@@ -7,6 +7,6 @@ const upload = require('../middleware/uploadMiddleware');
 router.get('/', vendorController.getAllVendors);
 router.get('/:id', vendorController.getVendorById);
 router.put('/profile', authenticateToken, requireRole(['vendor']), vendorController.updateVendorProfile);
-router.post('/upload', authenticateToken, requireRole(['vendor']), upload.single('file'), vendorController.uploadMedia);
+router.post('/upload', authenticateToken, requireRole(['vendor']), upload.single('file'), upload.validateAndSaveFile, vendorController.uploadMedia);
 
 module.exports = router;

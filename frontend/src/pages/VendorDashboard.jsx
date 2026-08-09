@@ -145,11 +145,12 @@ export default function VendorDashboard() {
       const res = await api.uploadMedia(formData);
       alert('התמונה הועלתה בהצלחה לגלריה!');
       setSelectedFile(null);
-      if (res && res.media && res.media.file_path) {
+      const uploadedPath = res?.file_path || res?.media?.file_path;
+      if (uploadedPath) {
         if (!vendorProfile?.cover_image) {
-          setVendorProfile(prev => ({ ...prev, cover_image: res.media.file_path }));
+          setVendorProfile(prev => ({ ...prev, cover_image: uploadedPath }));
           if (vendorProfile?.id && updateVendorInCache) {
-            updateVendorInCache(vendorProfile.id, { cover_image: res.media.file_path });
+            updateVendorInCache(vendorProfile.id, { cover_image: uploadedPath });
           }
         }
       }

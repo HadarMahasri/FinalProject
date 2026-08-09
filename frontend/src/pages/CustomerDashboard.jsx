@@ -99,12 +99,17 @@ export default function CustomerDashboard({ onOpenAIModal }) {
     loadData();
   }, []);
 
+  // A primitive id (not the `events` array itself) as the dependency —
+  // otherwise every create/update/delete on `events` produces a new array
+  // reference and re-triggers a redundant GET /api/tasks/event/:id call
+  // even when the actually-selected event hasn't changed.
+  const activeEventId = selectedEventId || events[0]?.id || null;
+
   useEffect(() => {
-    const activeEvId = selectedEventId || (events[0]?.id);
-    if (activeEvId) {
-      loadEventTasks(activeEvId);
+    if (activeEventId) {
+      loadEventTasks(activeEventId);
     }
-  }, [selectedEventId, events]);
+  }, [activeEventId]);
 
   const handleCreateEvent = async (e) => {
     e.preventDefault();
@@ -217,20 +222,19 @@ export default function CustomerDashboard({ onOpenAIModal }) {
   // Task Checklist Handlers
   const handleAddTask = async (e) => {
     e.preventDefault();
-    const activeEvId = selectedEventId || (events[0]?.id);
-    if (!activeEvId || !newTaskTitle.trim() || addingTask) return;
+    if (!activeEventId || !newTaskTitle.trim() || addingTask) return;
 
     setAddingTask(true);
     try {
       const res = await api.createTask({
-        event_id: activeEvId,
+        event_id: activeEventId,
         title: newTaskTitle.trim(),
         category: 'general'
       });
 
       const createdTaskObj = {
         id: res.id || Date.now(),
-        event_id: activeEvId,
+        event_id: activeEventId,
         title: newTaskTitle.trim(),
         category: 'general',
         is_completed: false

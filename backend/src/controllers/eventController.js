@@ -99,13 +99,27 @@ async function getCustomerEvents(req, res) {
 
 async function createBooking(req, res) {
   try {
-    const { event_id, vendor_id, notes, agreed_price } = req.body;
+    const { event_id, vendor_id, notes } = req.body;
 
     if (!event_id || !vendor_id) {
       return res.status(400).json({ message: 'נא לספק מזהה אירוע ומזהה ספק.' });
     }
 
-    await EventModel.createBooking({ event_id, vendor_id, notes, agreed_price });
+    // Verify the event actually belongs to the customer making the request —
+    // otherwise anyone could attach booking requests to someone else's event.
+    const event = await EventModel.getEventById(event_id);
+    if (!event || Number(event.customer_id) !== Number(req.user.id)) {
+      return res.status(403).json({ message: 'אין לך הרשאה לשלוח בקשת הזמנה עבור אירוע זה.' });
+    }
+
+    // Never trust a client-supplied price — always price the booking from
+    // the vendor's real starting price stored server-side.
+    const vendor = await VendorModel.getVendorById(vendor_id);
+    if (!vendor) {
+      return res.status(404).json({ message: 'ספק לא נמצא.' });
+    }
+
+    await EventModel.createBooking({ event_id, vendor_id, notes, agreed_price: vendor.starting_price });
     res.status(201).json({ message: 'בקשת ההזמנה נשלחה לספק בהצלחה!' });
   } catch (error) {
     console.error('Error in eventController.createBooking:', error);
@@ -148,6 +162,20 @@ async function updateBookingStatus(req, res) {
 
     if (!['pending', 'approved', 'declined', 'completed'].includes(status)) {
       return res.status(400).json({ message: 'סטטוס לא תקין.' });
+    }
+
+    // Verify the requester is actually one of the two parties on this
+    // booking (the vendor it was sent to, or the customer who sent it) —
+    // otherwise any logged-in vendor/customer could change any booking.
+    const ownership = await EventModel.getBookingOwnership(id);
+    if (!ownership) {
+      return res.status(404).json({ message: 'הזמנה לא נמצאה.' });
+    }
+
+    const isOwningVendor = req.user.role === 'vendor' && Number(ownership.vendor_user_id) === Number(req.user.id);
+    const isOwningCustomer = req.user.role === 'customer' && Number(ownership.customer_id) === Number(req.user.id);
+    if (!isOwningVendor && !isOwningCustomer) {
+      return res.status(403).json({ message: 'אין לך הרשאה לעדכן הזמנה זו.' });
     }
 
     await EventModel.updateBookingStatus(id, status);

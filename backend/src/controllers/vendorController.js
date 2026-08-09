@@ -100,10 +100,7 @@ async function uploadMedia(req, res) {
       await VendorModel.updateVendorProfile(vendor.id, { cover_image: filePath });
     }
 
-    res.json({
-      message: 'הקובץ הועלה בהצלחה!',
-      media: { id: mediaId, file_path: filePath }
-    });
+    res.json({ message: 'הקובץ הועלה בהצלחה!', id: mediaId, file_path: filePath });
   } catch (error) {
     console.error('Error in vendorController.uploadMedia:', error);
     res.status(500).json({ message: 'שגיאה בהעלאת קובץ.' });

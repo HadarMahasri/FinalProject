@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 const path = require('path');
 require('dotenv').config();
 
@@ -31,17 +32,35 @@ app.use((req, res, next) => {
   next();
 });
 
+// Socket.io Authentication Middleware
+// Verifies the JWT sent by the client during the handshake (never trust a
+// plain userId emitted from the client — anyone could claim to be anyone).
+// The verified user id is attached to the socket itself as `socket.userId`.
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+  if (!token) {
+    return next(new Error('Authentication required'));
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || 'eventhub_super_secret_jwt_key_2026', (err, decoded) => {
+    if (err) {
+      return next(new Error('Invalid or expired token'));
+    }
+    socket.userId = decoded.id;
+    next();
+  });
+});
+
 // Socket.io Connection & Room Handling
 io.on('connection', (socket) => {
   console.log(`⚡ WebSocket client connected: ${socket.id}`);
 
-  socket.on('join_user_room', (userId) => {
-    if (userId) {
-      const roomName = `user_${userId}`;
-      socket.join(roomName);
-      console.log(`👤 User ${userId} joined room ${roomName}`);
-    }
-  });
+  // Room membership is derived exclusively from the verified JWT above —
+  // the client cannot request to join another user's private notification
+  // room by supplying an arbitrary id.
+  const roomName = `user_${socket.userId}`;
+  socket.join(roomName);
+  console.log(`👤 User ${socket.userId} joined room ${roomName}`);
 
   socket.on('disconnect', () => {
     console.log(`🔌 WebSocket client disconnected: ${socket.id}`);

@@ -104,10 +104,10 @@ class EventModel {
       const totalCount = countRows[0]?.total || 0;
 
       let query = `
-        SELECT 
+        SELECT
            b.id, b.event_id, b.status, b.agreed_price, b.notes, e.customer_id,
-           e.title as event_title, e.event_type, e.event_date, e.location, e.guest_count, 
-           u.name as customer_name, u.phone as customer_phone, u.email as customer_email
+           e.title as event_title, e.event_type, e.event_date, e.location, e.guest_count,
+           u.name as customer_name, u.phone as customer_phone
          FROM bookings b
          JOIN events e ON b.event_id = e.id
          JOIN users u ON e.customer_id = u.id
@@ -202,6 +202,26 @@ class EventModel {
     } catch (err) {
       console.error('Error in EventModel.updateBookingStatus:', err.message);
       throw err;
+    }
+  }
+
+  // Returns who actually owns a booking (the vendor's user_id and the
+  // event's customer_id) so callers can verify the requester is one of the
+  // two parties before allowing them to act on it.
+  static async getBookingOwnership(bookingId) {
+    try {
+      const [rows] = await db.query(
+        `SELECT b.id, e.customer_id, v.user_id as vendor_user_id
+         FROM bookings b
+         JOIN events e ON b.event_id = e.id
+         JOIN vendors v ON b.vendor_id = v.id
+         WHERE b.id = ?`,
+        [bookingId]
+      );
+      return rows[0] || null;
+    } catch (err) {
+      console.error('Error in EventModel.getBookingOwnership:', err.message);
+      return null;
     }
   }
 }

@@ -33,17 +33,19 @@ export function SocketProvider({ children }) {
       return;
     }
 
-    // Connect Socket.io client
+    // Connect Socket.io client, authenticating with the JWT so the server
+    // can verify our identity itself instead of trusting a client-supplied
+    // user id (that used to let anyone join anyone else's private room).
     const socketUrl = window.location.origin;
     const socket = io(socketUrl, {
-      transports: ['websocket', 'polling']
+      transports: ['websocket'],
+      auth: { token }
     });
 
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      console.log('⚡ Socket.io connected, joining user room:', user.id);
-      socket.emit('join_user_room', user.id);
+      console.log('⚡ Socket.io connected and authenticated');
     });
 
     // Listen for live incoming messages

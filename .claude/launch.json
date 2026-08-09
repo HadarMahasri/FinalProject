@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:\\Users\\\u05d4\u05d3\u05e8\\source\\repos\\FullStack\\FinalProject\\backend", "run", "dev"],
+      "port": 5000
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:\\Users\\\u05d4\u05d3\u05e8\\source\\repos\\FullStack\\FinalProject\\frontend", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}

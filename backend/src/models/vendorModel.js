@@ -108,9 +108,9 @@ class VendorModel {
   static async getVendorById(id) {
     try {
       const [rows] = await db.query(
-        `SELECT 
+        `SELECT
            v.id, v.user_id, v.business_name, v.category, v.description, v.location, v.starting_price, v.is_approved, v.cover_image, v.created_at,
-           u.name as owner_name, u.email, u.phone,
+           u.name as owner_name, u.phone,
            COALESCE(r.review_count, 0) as review_count,
            COALESCE(ROUND(r.rating_avg, 2), 0.00) as rating_avg
          FROM vendors v 
