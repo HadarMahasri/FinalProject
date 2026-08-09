@@ -17,7 +17,7 @@ async function addReview(req, res) {
       comment
     });
 
-    res.status(201).json({ message: 'תודה! חוות הדעת התקבלה בהצלחה.', reviewId });
+    res.status(201).json({ message: 'תודה! חוות הדעת התקבלה בהצלחה.', id: reviewId });
   } catch (error) {
     console.error('Error in reviewController.addReview:', error);
     res.status(500).json({ message: 'שגיאה בהוספת חוות דעת.' });

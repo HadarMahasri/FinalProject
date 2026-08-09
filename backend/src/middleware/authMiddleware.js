@@ -18,7 +18,7 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Middleware to authorize specific roles (e.g. ['vendor'], ['admin'], ['customer', 'admin'])
+// Middleware to authorize specific roles (e.g. ['vendor'], ['customer'])
 function requireRole(allowedRoles) {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role)) {

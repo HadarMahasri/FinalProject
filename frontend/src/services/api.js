@@ -54,20 +54,33 @@ export const api = {
   deleteEvent: (id) => fetchAPI(`/events/${id}`, { method: 'DELETE' }),
   getCustomerEvents: () => fetchAPI('/events/my-events'),
   createBooking: (bookingData) => fetchAPI('/events/book', { method: 'POST', body: JSON.stringify(bookingData) }),
-  getVendorBookings: () => fetchAPI('/events/vendor-bookings'),
-  getCustomerBookings: () => fetchAPI('/events/customer-bookings'),
+  getVendorBookings: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchAPI(`/events/vendor-bookings${query ? `?${query}` : ''}`);
+  },
+  getCustomerBookings: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetchAPI(`/events/customer-bookings${query ? `?${query}` : ''}`);
+  },
   updateBookingStatus: (bookingId, status) => fetchAPI(`/events/booking/${bookingId}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
 
   // Reviews API
   addReview: (reviewData) => fetchAPI('/reviews', { method: 'POST', body: JSON.stringify(reviewData) }),
+  createReview: (reviewData) => fetchAPI('/reviews', { method: 'POST', body: JSON.stringify(reviewData) }),
   getVendorReviews: (vendorId) => fetchAPI(`/reviews/vendor/${vendorId}`),
 
   // AI Assistant API
   getAIPlan: (planParams) => fetchAPI('/ai/plan', { method: 'POST', body: JSON.stringify(planParams) }),
 
-  // Admin API
-  getAdminStats: () => fetchAPI('/admin/stats'),
-  getPendingVendors: () => fetchAPI('/admin/pending-vendors'),
-  approveVendor: (vendorId, isApproved) => fetchAPI(`/admin/vendor/${vendorId}/approve`, { method: 'PUT', body: JSON.stringify({ isApproved }) }),
-  getAllUsers: () => fetchAPI('/admin/users')
+  // Messages & Real-Time Chat API
+  sendMessage: (msgData) => fetchAPI('/messages', { method: 'POST', body: JSON.stringify(msgData) }),
+  getConversation: (otherUserId) => fetchAPI(`/messages/${otherUserId}`),
+  getConversationsList: () => fetchAPI('/messages/conversations'),
+  getUnreadCount: () => fetchAPI('/messages/unread-count'),
+
+  // Event Tasks API
+  getEventTasks: (eventId) => fetchAPI(`/tasks/event/${eventId}`),
+  createTask: (taskData) => fetchAPI('/tasks', { method: 'POST', body: JSON.stringify(taskData) }),
+  toggleTask: (taskId, is_completed) => fetchAPI(`/tasks/${taskId}/toggle`, { method: 'PUT', body: JSON.stringify({ is_completed }) }),
+  deleteTask: (taskId) => fetchAPI(`/tasks/${taskId}`, { method: 'DELETE' })
 };

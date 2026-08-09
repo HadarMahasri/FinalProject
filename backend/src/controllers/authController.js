@@ -11,6 +11,21 @@ async function register(req, res) {
       return res.status(400).json({ message: 'נא למלא את כל שדות החובה: שם, אימייל וסיסמה.' });
     }
 
+    // Phone validation: Must be 10 digits if provided
+    let cleanPhone = phone ? String(phone).replace(/\D/g, '') : '';
+    if (phone && cleanPhone.length !== 10) {
+      return res.status(400).json({ message: 'מספר טלפון אינו תקין. יש להזין מספר טלפון בן 10 ספרות (לדוגמה: 0501234567).' });
+    }
+
+    // Price validation for vendor: Must be >= 0
+    let parsedPrice = 0;
+    if (role === 'vendor') {
+      parsedPrice = Number(starting_price);
+      if (isNaN(parsedPrice) || parsedPrice < 0) {
+        return res.status(400).json({ message: 'מחיר פתיחה חייב להיות מספר תקין (0 ומעלה).' });
+      }
+    }
+
     const cleanEmail = email.trim().toLowerCase();
 
     const existingUser = await UserModel.findByEmail(cleanEmail);
@@ -26,7 +41,7 @@ async function register(req, res) {
       email: cleanEmail,
       password_hash,
       role,
-      phone
+      phone: cleanPhone || phone || null
     });
 
     // If registering as vendor, create initial vendor profile
@@ -41,7 +56,7 @@ async function register(req, res) {
         category,
         description: description || '',
         location: location || 'מרכז',
-        starting_price: starting_price || 0
+        starting_price: parsedPrice
       });
     }
 
@@ -54,12 +69,12 @@ async function register(req, res) {
     res.status(201).json({
       message: 'הרשמה בוצעה בהצלחה!',
       token,
-      user: { id: userId, name, email: cleanEmail, role, phone, vendorId }
+      user: { id: userId, name, email: cleanEmail, role, phone: cleanPhone || phone, vendorId }
     });
 
   } catch (error) {
     console.error('Error in authController.register:', error);
-    res.status(500).json({ message: 'שגיאה בביצוע ההרשמה. נא לנסות שנית.' });
+    res.status(500).json({ message: 'שגיאה בביצוע הרשמה.' });
   }
 }
 
@@ -68,31 +83,27 @@ async function login(req, res) {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'נא להזין אימייל וסיסמה.' });
+      return res.status(400).json({ message: 'נא למלא אימייל וסיסמה.' });
     }
 
     const cleanEmail = email.trim().toLowerCase();
     const user = await UserModel.findByEmail(cleanEmail);
     if (!user) {
-      return res.status(401).json({ message: 'אימייל או סיסמה שגויים.' });
+      return res.status(400).json({ message: 'פרטי התחברות שגויים.' });
     }
 
-    // Check password with bcrypt and fallback for seed users
     let isMatch = false;
+
     if (user.password_hash.startsWith('$2a$') || user.password_hash.startsWith('$2b$')) {
       isMatch = await bcrypt.compare(password, user.password_hash);
-      if (!isMatch && password === 'password123') {
-        isMatch = true; // Seed users fallback
-      }
     } else {
-      isMatch = (password === 'password123' || password === user.password_hash);
+      isMatch = (password === user.password_hash);
     }
 
     if (!isMatch) {
-      return res.status(401).json({ message: 'אימייל או סיסמה שגויים.' });
+      return res.status(400).json({ message: 'פרטי התחברות שגויים.' });
     }
 
-    // Check if user is vendor to attach vendorId
     let vendorId = null;
     if (user.role === 'vendor') {
       const vendor = await VendorModel.getVendorByUserId(user.id);
@@ -106,7 +117,7 @@ async function login(req, res) {
     );
 
     res.json({
-      message: 'התחברת בהצלחה!',
+      message: 'התחברות בוצעה בהצלחה!',
       token,
       user: {
         id: user.id,
@@ -114,14 +125,12 @@ async function login(req, res) {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        avatar_url: user.avatar_url,
         vendorId
       }
     });
-
   } catch (error) {
     console.error('Error in authController.login:', error);
-    res.status(500).json({ message: 'שגיאה בהתחברות למערכת.' });
+    res.status(500).json({ message: 'שגיאה בביצוע התחברות.' });
   }
 }
 
@@ -134,17 +143,29 @@ async function getProfile(req, res) {
 
     let vendorProfile = null;
     if (user.role === 'vendor') {
-      vendorProfile = await VendorModel.getVendorByUserId(user.id);
-      if (vendorProfile) {
-        const media = await VendorModel.getVendorMedia(vendorProfile.id);
-        vendorProfile.media = media;
+      const basicVendor = await VendorModel.getVendorByUserId(user.id);
+      if (basicVendor) {
+        vendorProfile = await VendorModel.getVendorById(basicVendor.id);
+        const media = await VendorModel.getVendorMedia(basicVendor.id);
+        if (vendorProfile) {
+          vendorProfile.media = media;
+        }
       }
     }
 
-    res.json({ user, vendorProfile });
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone
+      },
+      vendorProfile
+    });
   } catch (error) {
     console.error('Error in authController.getProfile:', error);
-    res.status(500).json({ message: 'שגיאה בשליפת נתוני הפרופיל.' });
+    res.status(500).json({ message: 'שגיאה בשליפת פרופיל.' });
   }
 }
 

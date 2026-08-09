@@ -2,13 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Store, Upload, Check, X, Calendar, Phone, Mail, FileText, Image as ImageIcon, Eye, TrendingUp, CheckCircle2, DollarSign, Star, PieChart } from 'lucide-react';
+import { useData } from '../context/DataContext';
+import { useSocket } from '../context/SocketContext';
+import { Store, Upload, Check, X, Calendar, Phone, Mail, FileText, Image as ImageIcon, Eye, TrendingUp, CheckCircle2, DollarSign, Star, PieChart, ChevronDown, MessageSquare, Edit3 } from 'lucide-react';
+
+const BOOKINGS_PER_PAGE = 5;
 
 export default function VendorDashboard() {
   const { user } = useAuth();
+  const { getVendorBookingsCached, updateVendorInCache, updateBookingStatusInCache } = useData();
+  const { openChatWithUser } = useSocket();
+
   const [bookings, setBookings] = useState([]);
   const [vendorProfile, setVendorProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Active Tab State: 'bookings' | 'profile' | 'analytics'
+  const [activeTab, setActiveTab] = useState('bookings');
+
+  // Bookings pagination state
+  const [bookingsPage, setBookingsPage] = useState(1);
+  const [bookingsTotalCount, setBookingsTotalCount] = useState(0);
+  const [hasMoreBookings, setHasMoreBookings] = useState(false);
+  const [loadingMoreBookings, setLoadingMoreBookings] = useState(false);
 
   // Edit Profile Form State
   const [phone, setPhone] = useState('');
@@ -21,12 +37,13 @@ export default function VendorDashboard() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const loadVendorData = async () => {
+  const loadVendorData = async (force = false) => {
     setLoading(true);
+    setBookingsPage(1);
     try {
       const [profileRes, bookingsRes] = await Promise.all([
         api.getProfile(),
-        api.getVendorBookings()
+        getVendorBookingsCached({ limit: BOOKINGS_PER_PAGE, page: 1 }, force)
       ]);
       setVendorProfile(profileRes.vendorProfile);
       setPhone(profileRes.user?.phone || profileRes.vendorProfile?.phone || '');
@@ -36,7 +53,16 @@ export default function VendorDashboard() {
         setStartingPrice(profileRes.vendorProfile.starting_price || '');
         setLocation(profileRes.vendorProfile.location || '');
       }
-      setBookings(bookingsRes || []);
+
+      if (bookingsRes && bookingsRes.bookings) {
+        setBookings(bookingsRes.bookings);
+        setBookingsTotalCount(bookingsRes.totalCount || 0);
+        setHasMoreBookings(bookingsRes.hasMore || false);
+      } else if (Array.isArray(bookingsRes)) {
+        setBookings(bookingsRes.slice(0, BOOKINGS_PER_PAGE));
+        setBookingsTotalCount(bookingsRes.length);
+        setHasMoreBookings(bookingsRes.length > BOOKINGS_PER_PAGE);
+      }
     } catch (err) {
       console.error('Failed to load vendor dashboard data:', err);
     } finally {
@@ -48,33 +74,57 @@ export default function VendorDashboard() {
     loadVendorData();
   }, []);
 
+  const handleLoadMoreBookings = async () => {
+    const nextPage = bookingsPage + 1;
+    setLoadingMoreBookings(true);
+    try {
+      const res = await getVendorBookingsCached({ limit: BOOKINGS_PER_PAGE, page: nextPage });
+      if (res && res.bookings) {
+        setBookings(prev => [...prev, ...res.bookings]);
+        setBookingsPage(nextPage);
+        setHasMoreBookings(res.hasMore || false);
+      }
+    } catch (err) {
+      console.error('Failed to load more vendor bookings:', err);
+    } finally {
+      setLoadingMoreBookings(false);
+    }
+  };
+
   const handleUpdateStatus = async (bookingId, newStatus) => {
+    setBookings(prev => prev.map(b => Number(b.id) === Number(bookingId) ? { ...b, status: newStatus } : b));
+    if (updateBookingStatusInCache) {
+      updateBookingStatusInCache(bookingId, newStatus);
+    }
+
     try {
       await api.updateBookingStatus(bookingId, newStatus);
-      alert(`סטטוס הבקשה עודכן ל-${newStatus === 'approved' ? 'אושר' : 'נדחה'}`);
-      setBookings(prev => prev.map(b => Number(b.id) === Number(bookingId) ? { ...b, status: newStatus } : b));
     } catch (err) {
       alert('שגיאה בעדכון הסטטוס: ' + err.message);
+      loadVendorData(true);
     }
   };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setUpdatingProfile(true);
-
-    const updatedFields = {
-      phone,
-      description,
-      starting_price: Number(startingPrice),
-      location
-    };
-
     try {
+      const updatedFields = {
+        phone,
+        description,
+        starting_price: Number(startingPrice) || 0,
+        location
+      };
+
       await api.updateVendorProfile(updatedFields);
-      alert('פרטי העסק והטלפון עודכנו בהצלחה!');
+      alert('פרטי העסק עודכנו בהצלחה!');
+
       setVendorProfile(prev => ({ ...prev, ...updatedFields }));
+      if (vendorProfile?.id && updateVendorInCache) {
+        updateVendorInCache(vendorProfile.id, updatedFields);
+      }
     } catch (err) {
-      alert('שגיאה בעדכון הפרופיל: ' + err.message);
+      alert('שגיאה בעדכון הפרטים: ' + err.message);
     } finally {
       setUpdatingProfile(false);
     }
@@ -83,24 +133,25 @@ export default function VendorDashboard() {
   const handleFileUpload = async (e) => {
     e.preventDefault();
     if (!selectedFile) {
-      alert('נא לבחור קובץ להעלאה.');
+      alert('נא לבחור קובץ תמונה להעלאה.');
       return;
     }
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
       const res = await api.uploadMedia(formData);
       alert('התמונה הועלתה בהצלחה לגלריה!');
       setSelectedFile(null);
-
-      if (res && res.media) {
-        setVendorProfile(prev => ({
-          ...prev,
-          media: [res.media, ...(prev?.media || [])]
-        }));
-      } else {
-        loadVendorData();
+      if (res && res.media && res.media.file_path) {
+        if (!vendorProfile?.cover_image) {
+          setVendorProfile(prev => ({ ...prev, cover_image: res.media.file_path }));
+          if (vendorProfile?.id && updateVendorInCache) {
+            updateVendorInCache(vendorProfile.id, { cover_image: res.media.file_path });
+          }
+        }
       }
     } catch (err) {
       alert('שגיאה בהעלאת התמונה: ' + err.message);
@@ -109,238 +160,337 @@ export default function VendorDashboard() {
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return 'תאריך טרם נקבע';
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? String(dateStr) : d.toLocaleDateString('he-IL');
-  };
+  const pendingBookingsCount = bookings.filter(b => b.status === 'pending').length;
+  const approvedBookingsCount = bookings.filter(b => b.status === 'approved').length;
+  const totalAgreedSpent = bookings.reduce((sum, b) => sum + Number(b.agreed_price || 0), 0);
 
-  const mediaList = vendorProfile?.media || [];
-
-  // Business Analytics & Statistics Calculations
-  const totalBookings = bookings.length;
-  const approvedBookings = bookings.filter(b => b.status === 'approved');
-  const pendingBookings = bookings.filter(b => b.status === 'pending');
-  const totalRevenue = approvedBookings.reduce((sum, b) => sum + (Number(b.agreed_price) || 0), 0);
-  const acceptanceRate = totalBookings > 0 ? Math.round((approvedBookings.length / totalBookings) * 100) : 0;
+  if (loading) {
+    return (
+      <div className="container" style={{ padding: '80px 20px', textAlign: 'center' }}>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>טוען את נתוני הדשבורד של העסק...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container" style={{ padding: '40px 20px' }}>
       
       {/* Header Banner */}
-      <div className="glass-card" style={{ padding: '30px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Store size={28} color="var(--color-secondary)" />
-          <div>
-            <h1 style={{ fontSize: '1.8rem', marginBottom: '2px' }}>אזור ניהול ספק - {vendorProfile?.business_name || user.name}</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>ניהול פניות נכנסות מלקוחות, אנליטיקת עסק, עדכון מחירון וגלריה</p>
-          </div>
+      <div className="glass-card" style={{ padding: '32px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+        <div>
+          <span className="badge badge-gold" style={{ marginBottom: '8px' }}>אזור אישי - ספק</span>
+          <h1 style={{ fontSize: '2rem' }}>{vendorProfile?.business_name || user?.name} 👋</h1>
+          <p style={{ color: 'var(--color-text-muted)', marginTop: '4px' }}>ניהול נוח של פניות הלקוחות, צ'אט בלייב, עדכון פרטי העסק והעלאת תמונות לגלרייה</p>
         </div>
 
-        {vendorProfile && (
-          <Link to={`/vendors/${vendorProfile.id}`} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Eye size={16} color="var(--color-primary)" /> לצפייה בפרופיל הציבורי שלך
+        {vendorProfile?.id && (
+          <Link to={`/vendors/${vendorProfile.id}`} className="btn btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <Eye size={18} /> תצוגה מקדימה כפי שלקוחות רואים
           </Link>
         )}
       </div>
 
-      {/* Visual Analytics & Reports KPI Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-        <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ background: 'rgba(124, 58, 237, 0.2)', padding: '12px', borderRadius: '12px' }}>
-            <TrendingUp size={24} color="var(--color-primary)" />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>סה"כ פניות נכנסות</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-main)' }}>{totalBookings}</span>
-          </div>
-        </div>
+      {/* Segmented Navigation Tabs */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '8px', 
+        marginBottom: '32px', 
+        background: 'rgba(15, 23, 42, 0.8)', 
+        padding: '6px', 
+        borderRadius: '16px', 
+        border: '1px solid var(--color-border)',
+        overflowX: 'auto'
+      }}>
+        <button 
+          onClick={() => setActiveTab('bookings')} 
+          style={{ 
+            flex: 1, 
+            minWidth: '160px',
+            padding: '12px 16px', 
+            borderRadius: '12px', 
+            border: 'none',
+            background: activeTab === 'bookings' ? 'linear-gradient(135deg, var(--color-primary), #4338ca)' : 'transparent',
+            color: activeTab === 'bookings' ? '#fff' : 'var(--color-text-muted)',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <FileText size={18} /> פניות מספקים ({bookingsTotalCount || bookings.length})
+        </button>
 
-        <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ background: 'rgba(16, 185, 129, 0.2)', padding: '12px', borderRadius: '12px' }}>
-            <CheckCircle2 size={24} color="#10b981" />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>פניות שאושרו (אחוז סגירה)</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>{approvedBookings.length} ({acceptanceRate}%)</span>
-          </div>
-        </div>
+        <button 
+          onClick={() => setActiveTab('profile')} 
+          style={{ 
+            flex: 1, 
+            minWidth: '160px',
+            padding: '12px 16px', 
+            borderRadius: '12px', 
+            border: 'none',
+            background: activeTab === 'profile' ? 'linear-gradient(135deg, var(--color-primary), #4338ca)' : 'transparent',
+            color: activeTab === 'profile' ? '#fff' : 'var(--color-text-muted)',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <Store size={18} /> ניהול פרופיל עסק וגלרייה
+        </button>
 
-        <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ background: 'rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '12px' }}>
-            <DollarSign size={24} color="#fbbf24" />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>צפי הכנסות מאירועים</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fbbf24' }}>₪{totalRevenue.toLocaleString()}</span>
-          </div>
-        </div>
-
-        <div className="glass-card" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ background: 'rgba(236, 72, 153, 0.2)', padding: '12px', borderRadius: '12px' }}>
-            <Star size={24} color="#ec4899" />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>דירוג ממוצע בעסק</span>
-            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ec4899' }}>{Number(vendorProfile?.rating_avg || 5.0).toFixed(1)} ⭐</span>
-          </div>
-        </div>
+        <button 
+          onClick={() => setActiveTab('analytics')} 
+          style={{ 
+            flex: 1, 
+            minWidth: '160px',
+            padding: '12px 16px', 
+            borderRadius: '12px', 
+            border: 'none',
+            background: activeTab === 'analytics' ? 'linear-gradient(135deg, var(--color-primary), #4338ca)' : 'transparent',
+            color: activeTab === 'analytics' ? '#fff' : 'var(--color-text-muted)',
+            fontWeight: 600,
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <TrendingUp size={18} /> סטטיסטיקות וביצועים
+        </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' }}>
-        
-        {/* Main Left Column: Bookings & My Gallery */}
-        <div>
-          
-          {/* Bookings Table / List */}
-          <div style={{ marginBottom: '40px' }}>
-            <h2 style={{ fontSize: '1.4rem', marginBottom: '20px' }}>פניות נכנסות מלקוחות ({bookings.length})</h2>
+      {/* TAB 1: BOOKINGS / ENQUIRIES */}
+      {activeTab === 'bookings' && (
+        <div className="animate-fade-in">
+          <div className="glass-card" style={{ padding: '28px' }}>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FileText size={22} color="var(--color-primary)" /> פניות והצעות מחיר מלקוחות ({bookingsTotalCount || bookings.length})
+            </h2>
 
-            {loading ? (
-              <p style={{ color: 'var(--color-text-muted)' }}>טוען פניות...</p>
-            ) : bookings.length === 0 ? (
-              <div className="glass-card" style={{ padding: '40px', textAlign: 'center' }}>
-                <p style={{ color: 'var(--color-text-muted)' }}>אין פניות נכנסות כרגע.</p>
-              </div>
+            {bookings.length === 0 ? (
+              <p style={{ color: 'var(--color-text-muted)', padding: '20px 0' }}>טרם התקבלו פניות מלקוחות.</p>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {bookings.map(b => (
-                  <div key={b.id} className="glass-card" style={{ padding: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.2rem', color: 'var(--color-text-main)' }}>{b.event_title} ({b.event_type})</h3>
-                        <p style={{ fontSize: '0.9rem', color: '#fbbf24', fontWeight: 700 }}>
-                          תאריך האירוע: {formatDate(b.event_date)}
-                        </p>
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {bookings.map(b => (
+                    <div key={b.id} style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
+                        <div>
+                          <span className="badge badge-primary" style={{ marginBottom: '4px' }}>{b.event_type}</span>
+                          <h3 style={{ fontSize: '1.15rem' }}>{b.event_title}</h3>
+                          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginTop: '2px' }}>
+                            שם הלקוח/ה: <b>{b.customer_name}</b> | טלפון: <b>{b.customer_phone || 'טרם עודכן'}</b>
+                          </p>
+                        </div>
+
+                        <div style={{ textAlign: 'left' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>מחיר מוצע / מוסכם</span>
+                          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fbbf24' }}>
+                            ₪{Number(b.agreed_price || 0).toLocaleString()}
+                          </span>
+                        </div>
                       </div>
 
-                      <span className={`badge ${b.status === 'approved' ? 'badge-success' : b.status === 'declined' ? 'badge-danger' : 'badge-warning'}`}>
-                        {b.status === 'approved' ? 'מאושר' : b.status === 'declined' ? 'נדחה' : 'ממתין לתשובה'}
-                      </span>
-                    </div>
-
-                    <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '14px' }}>
-                      <p style={{ marginBottom: '4px' }}>שם הלקוח: <b>{b.customer_name}</b> | טלפון: <b>{b.customer_phone || 'טרם עודכן'}</b> | אימייל: <b>{b.customer_email || 'לא צוין'}</b></p>
-                      {b.notes && <p style={{ color: 'var(--color-text-main)', marginTop: '4px' }}>הערות: "{b.notes}"</p>}
-                    </div>
-
-                    {b.status === 'pending' && (
-                      <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                        <button onClick={() => handleUpdateStatus(b.id, 'declined')} className="btn btn-secondary btn-sm" style={{ borderColor: 'var(--color-danger)', color: '#f87171' }}>
-                          <X size={14} /> דחה פנייה
-                        </button>
-                        <button onClick={() => handleUpdateStatus(b.id, 'approved')} className="btn btn-primary btn-sm">
-                          <Check size={14} /> אישור הזמנה
-                        </button>
+                      <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+                        תאריך אירוע: <b>{new Date(b.event_date).toLocaleDateString('he-IL')}</b> | אזור: <b>{b.location}</b> | אורחים: <b>{b.guest_count || 'לא צוין'}</b>
+                        {b.notes && <p style={{ marginTop: '6px', color: 'var(--color-text-main)' }}>הערות הלקוח: "{b.notes}"</p>}
                       </div>
-                    )}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                        <div>
+                          {b.status === 'pending' && <span className="badge badge-warning">ממתין לתגובתך</span>}
+                          {b.status === 'approved' && <span className="badge badge-success">אישרת פנייה זו</span>}
+                          {b.status === 'declined' && <span className="badge badge-danger">דחית פנייה זו</span>}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          {b.customer_id && (
+                            <button onClick={() => openChatWithUser(b.customer_id)} className="btn btn-gold btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <MessageSquare size={16} /> צ'אט עם הלקוח/ה
+                            </button>
+                          )}
+
+                          {b.status === 'pending' && (
+                            <>
+                              <button onClick={() => handleUpdateStatus(b.id, 'approved')} className="btn btn-primary btn-sm">
+                                <Check size={16} /> אישור פנייה
+                              </button>
+                              <button onClick={() => handleUpdateStatus(b.id, 'declined')} className="btn btn-secondary btn-sm" style={{ color: 'var(--color-danger)' }}>
+                                <X size={16} /> דחייה
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Load More Bookings Button */}
+                {hasMoreBookings && (
+                  <div style={{ textAlign: 'center', marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
+                      מוצגות <b>{bookings.length}</b> מתוך <b>{bookingsTotalCount}</b> פניות
+                    </p>
+                    <button 
+                      onClick={handleLoadMoreBookings} 
+                      className="btn btn-secondary" 
+                      disabled={loadingMoreBookings}
+                      style={{ padding: '10px 24px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <ChevronDown size={16} /> {loadingMoreBookings ? 'טוען פניות...' : `טען פניות נוספות (${bookingsTotalCount - bookings.length} נותרו)`}
+                    </button>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
-
-          {/* Dedicated My Gallery Section */}
-          <div className="glass-card" style={{ padding: '30px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '1.4rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ImageIcon size={22} color="var(--color-primary)" /> הגלריה שלי ({mediaList.length} תמונות)
-              </h2>
-              {vendorProfile && (
-                <Link to={`/vendors/${vendorProfile.id}`} style={{ fontSize: '0.85rem', color: 'var(--color-primary)', fontWeight: 600 }}>
-                  איך הלקוחות רואים את הגלריה? ←
-                </Link>
-              )}
-            </div>
-
-            {mediaList.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed var(--color-border)' }}>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>
-                  טרם העלית תמונות לגלריה. השתמש בטופס הצידי כדי להעלות תמונות ראשונות!
-                </p>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '14px' }}>
-                {mediaList.map(m => {
-                  const mediaUrl = m.file_path;
-                  return (
-                    <div key={m.id} style={{ height: '120px', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--color-border)', position: 'relative' }}>
-                      <img src={mediaUrl} alt="תמונת גלריה" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
         </div>
+      )}
 
-        {/* Sidebar: Media Upload & Profile Edit */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* TAB 2: PROFILE & MEDIA GALLERY MANAGEMENT */}
+      {activeTab === 'profile' && (
+        <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
           
-          {/* File Upload Box (Multer API) */}
-          <div className="glass-card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Upload size={18} color="var(--color-primary)" /> העלאת תמונה לגלריית העסק
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-              העלאת קבצים ישירות לשרת Node.js (תמיכה ב-JPG, PNG, WEBP).
-            </p>
+          {/* Edit Profile Form */}
+          <div className="glass-card" style={{ padding: '28px' }}>
+            <h2 style={{ fontSize: '1.3rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Edit3 size={20} color="var(--color-primary)" /> עדכון פרטי העסק והמחירים
+            </h2>
 
-            <form onSubmit={handleFileUpload} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={e => setSelectedFile(e.target.files[0])}
-                className="form-input" 
-                style={{ padding: '8px' }} 
-              />
-              <button type="submit" className="btn btn-gold btn-sm" disabled={uploading || !selectedFile}>
-                <Upload size={14} /> {uploading ? 'מעלה קובץ לשרת...' : 'העלה תמונה לגלריה'}
+            <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label">טלפון ליצירת קשר</label>
+                <input type="text" className="form-input" value={phone} onChange={e => setPhone(e.target.value)} required />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="form-group">
+                  <label className="form-label">מחיר פתיחה מוערך (₪)</label>
+                  <input type="number" className="form-input" min="0" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} required />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">אזור פעילות</label>
+                  <select className="form-select" value={location} onChange={e => setLocation(e.target.value)}>
+                    <option value="תל אביב והמרכז">תל אביב והמרכז</option>
+                    <option value="ירושלים והסביבה">ירושלים והסביבה</option>
+                    <option value="צפון והגליל">צפון והגליל</option>
+                    <option value="שפלה ודרום">שפלה ודרום</option>
+                    <option value="כל הארץ">כל הארץ</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">על העסק והשירות</label>
+                <textarea className="form-textarea" rows="4" value={description} onChange={e => setDescription(e.target.value)} required />
+              </div>
+
+              <button type="submit" className="btn btn-primary" disabled={updatingProfile} style={{ alignSelf: 'flex-start' }}>
+                {updatingProfile ? 'מעדכן...' : 'שמור שינויים בפרטי העסק'}
               </button>
             </form>
           </div>
 
-          {/* Quick Profile Edit */}
-          <div className="glass-card" style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>עדכון פרטי עסק וטלפון</h3>
-            
-            <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Media Upload Form */}
+          <div className="glass-card" style={{ padding: '28px' }}>
+            <h2 style={{ fontSize: '1.3rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ImageIcon size={20} color="var(--color-primary)" /> העלאת תמונות לגלרייה
+            </h2>
+
+            <form onSubmit={handleFileUpload} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
-                <label className="form-label">מספר טלפון ליצירת קשר</label>
+                <label className="form-label">בחר תמונה להעלאה (JPG / PNG / WEBP)</label>
                 <input 
-                  type="tel" 
+                  type="file" 
                   className="form-input" 
-                  value={phone} 
-                  onChange={e => setPhone(e.target.value)} 
-                  placeholder="050-1234567"
+                  accept="image/*" 
+                  onChange={e => setSelectedFile(e.target.files[0])} 
+                  required 
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">מחיר פתיחה מוערך (₪)</label>
-                <input type="number" className="form-input" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">אזור פעילות עיקרי</label>
-                <input type="text" className="form-input" value={location} onChange={e => setLocation(e.target.value)} />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">תיאור העסק</label>
-                <textarea className="form-textarea" rows="3" value={description} onChange={e => setDescription(e.target.value)} />
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-sm" disabled={updatingProfile}>
-                {updatingProfile ? 'שומר שינויים...' : 'שמור עדכונים'}
+              <button type="submit" className="btn btn-gold" disabled={uploading || !selectedFile} style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Upload size={18} /> {uploading ? 'מעלה תמונה...' : 'העלה תמונה לגלרייה'}
               </button>
             </form>
+
+            {vendorProfile?.cover_image && (
+              <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '8px' }}>תמונת שער נוכחית:</span>
+                <img 
+                  src={vendorProfile.cover_image} 
+                  alt="Cover" 
+                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', border: '1px solid var(--color-border)' }} 
+                />
+              </div>
+            )}
           </div>
 
         </div>
+      )}
 
-      </div>
+      {/* TAB 3: ANALYTICS & PERFORMANCE */}
+      {activeTab === 'analytics' && (
+        <div className="animate-fade-in">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+            <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ background: 'rgba(245, 158, 11, 0.15)', padding: '16px', borderRadius: '14px', color: '#fbbf24' }}>
+                <Calendar size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>פניות חדשות (ממתינות)</span>
+                <span style={{ fontSize: '1.8rem', fontWeight: 800 }}>{pendingBookingsCount}</span>
+              </div>
+            </div>
+
+            <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '16px', borderRadius: '14px', color: '#34d399' }}>
+                <CheckCircle2 size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>סגירות שנחתמו (מאושרות)</span>
+                <span style={{ fontSize: '1.8rem', fontWeight: 800 }}>{approvedBookingsCount}</span>
+              </div>
+            </div>
+
+            <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ background: 'rgba(79, 70, 229, 0.15)', padding: '16px', borderRadius: '14px', color: '#a5b4fc' }}>
+                <Star size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>דירוג ממוצע מעודכן</span>
+                <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fbbf24' }}>
+                  {vendorProfile?.review_count > 0 ? `${Number(vendorProfile.rating_avg).toFixed(1)} ⭐` : 'טרם דורג (ספק חדש)'}
+                </span>
+              </div>
+            </div>
+
+            <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ background: 'rgba(52, 211, 153, 0.15)', padding: '16px', borderRadius: '14px', color: '#34d399' }}>
+                <DollarSign size={28} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>סך הכנסות מוסכמות</span>
+                <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fbbf24' }}>₪{totalAgreedSpent.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

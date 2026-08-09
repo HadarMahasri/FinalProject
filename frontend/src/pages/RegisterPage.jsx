@@ -25,6 +25,22 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Phone Validation: Must be exactly 10 digits if provided
+    const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+    if (phone && cleanPhone.length !== 10) {
+      setError('מספר הטלפון אינו תקין. יש להזין מספר טלפון בן 10 ספרות (לדוגמה: 0501234567 או 050-1234567).');
+      return;
+    }
+
+    // Vendor Starting Price Validation: Must be >= 0
+    if (role === 'vendor') {
+      if (startingPrice === '' || isNaN(Number(startingPrice)) || Number(startingPrice) < 0) {
+        setError('מחיר פתיחה חייב להיות מספר תקין (0 או יותר).');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -33,7 +49,7 @@ export default function RegisterPage() {
         email,
         password,
         role,
-        phone,
+        phone: cleanPhone ? cleanPhone : phone,
         business_name: businessName,
         category,
         description,
@@ -125,8 +141,15 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">טלפון</label>
-              <input type="tel" className="form-input" value={phone} onChange={e => setPhone(e.target.value)} placeholder="050-0000000" />
+              <label className="form-label">מספר טלפון (10 ספרות)</label>
+              <input 
+                type="tel" 
+                className="form-input" 
+                value={phone} 
+                onChange={e => setPhone(e.target.value)} 
+                placeholder="0501234567" 
+                maxLength="12"
+              />
             </div>
           </div>
 
@@ -174,7 +197,14 @@ export default function RegisterPage() {
 
                 <div className="form-group">
                   <label className="form-label">מחיר פתיחה (₪)</label>
-                  <input type="number" className="form-input" value={startingPrice} onChange={e => setStartingPrice(e.target.value)} min="0" step="500" />
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    value={startingPrice} 
+                    onChange={e => setStartingPrice(e.target.value)} 
+                    min="0" 
+                    placeholder="הזן מחיר בש''ח (לדוגמה: 120)"
+                  />
                 </div>
               </div>
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useData } from '../context/DataContext';
+import { useSocket } from '../context/SocketContext';
 import { Star, MapPin, Phone, Calendar, Image as ImageIcon, CheckCircle, AlertTriangle, MessageSquare, Store, Eye } from 'lucide-react';
 
 const categoryLabels = {
@@ -17,6 +19,8 @@ export default function VendorDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user, token } = useAuth();
+  const { updateVendorInCache, addBookingToCache } = useData();
+  const { openChatWithUser } = useSocket();
 
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -97,6 +101,7 @@ export default function VendorDetailsPage() {
       alert(res.message || 'בקשת התיאום נשלחה לספק בהצלחה!');
       setShowBookingModal(false);
       setBookingNotes('');
+      if (addBookingToCache) addBookingToCache();
     } catch (err) {
       alert('שגיאה בשליחת הבקשה: ' + err.message);
     } finally {
@@ -114,7 +119,7 @@ export default function VendorDetailsPage() {
 
     setSubmittingReview(true);
     try {
-      await api.createReview({
+      const res = await api.createReview({
         vendor_id: Number(vendor.id),
         rating: Number(rating),
         comment
@@ -122,9 +127,26 @@ export default function VendorDetailsPage() {
       alert('תודה על חוות הדעת! הביקורת נוספה בהצלחה.');
       setComment('');
       
-      // Reload vendor data to update reviews list and live score
-      const updatedVendor = await api.getVendorById(id);
-      setVendor(updatedVendor);
+      // Update local state directly - ZERO extra GET network calls!
+      if (res && res.review) {
+        const newReviews = [res.review, ...(vendor?.reviews || [])];
+        const newCount = newReviews.length;
+        const newAvg = (newReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / newCount).toFixed(1);
+
+        setVendor(prev => ({
+          ...prev,
+          reviews: newReviews,
+          review_count: newCount,
+          rating_avg: Number(newAvg)
+        }));
+
+        if (updateVendorInCache) {
+          updateVendorInCache(vendor.id, {
+            review_count: newCount,
+            rating_avg: Number(newAvg)
+          });
+        }
+      }
     } catch (err) {
       alert('שגיאה בהוספת הביקורת: ' + err.message);
     } finally {
@@ -196,9 +218,14 @@ export default function VendorDetailsPage() {
                   <span>מצב צפייה כספק</span>
                 </div>
               ) : (
-                <button onClick={handleOpenBooking} className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1.05rem' }}>
-                  <Calendar size={18} /> שלח בקשת תיאום
-                </button>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button onClick={() => openChatWithUser(vendor.user_id)} className="btn btn-gold" style={{ padding: '14px 20px', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <MessageSquare size={18} /> צ'אט בלייב עם הספק
+                  </button>
+                  <button onClick={handleOpenBooking} className="btn btn-primary" style={{ padding: '14px 24px', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Calendar size={18} /> שלח בקשת תיאום
+                  </button>
+                </div>
               )}
             </div>
           </div>

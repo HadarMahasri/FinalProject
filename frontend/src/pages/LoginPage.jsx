@@ -19,7 +19,6 @@ export default function LoginPage() {
       const loggedUser = await login(email, password);
       if (loggedUser.role === 'customer') navigate('/dashboard/customer');
       else if (loggedUser.role === 'vendor') navigate('/dashboard/vendor');
-      else if (loggedUser.role === 'admin') navigate('/dashboard/admin');
       else navigate('/');
     } catch (err) {
       setError(err.message || 'אימייל או סיסמה שגויים');

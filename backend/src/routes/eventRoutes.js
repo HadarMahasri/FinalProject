@@ -3,9 +3,9 @@ const router = express.Router();
 const eventController = require('../controllers/eventController');
 const { authenticateToken, requireRole } = require('../middleware/authMiddleware');
 
-router.post('/', authenticateToken, requireRole(['customer', 'admin']), eventController.createEvent);
-router.put('/:id', authenticateToken, requireRole(['customer', 'admin']), eventController.updateEvent);
-router.delete('/:id', authenticateToken, requireRole(['customer', 'admin']), eventController.deleteEvent);
+router.post('/', authenticateToken, requireRole(['customer']), eventController.createEvent);
+router.put('/:id', authenticateToken, requireRole(['customer']), eventController.updateEvent);
+router.delete('/:id', authenticateToken, requireRole(['customer']), eventController.deleteEvent);
 
 router.get('/my-events', authenticateToken, requireRole(['customer']), eventController.getCustomerEvents);
 router.post('/book', authenticateToken, requireRole(['customer']), eventController.createBooking);

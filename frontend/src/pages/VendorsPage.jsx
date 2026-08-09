@@ -1,29 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { api } from '../services/api';
+import { useData } from '../context/DataContext';
 import VendorCard from '../components/VendorCard';
-import { Search, Filter, RefreshCw } from 'lucide-react';
+import { Search, Filter, RefreshCw, ChevronDown } from 'lucide-react';
+
+const PAGE_SIZE = 6;
 
 export default function VendorsPage() {
+  const { getVendorsCached } = useData();
   const [searchParams, setSearchParams] = useSearchParams();
   const [vendors, setVendors] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Filters state
   const [category, setCategory] = useState(searchParams.get('category') || 'all');
   const [location, setLocation] = useState(searchParams.get('location') || '');
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
 
-  const loadVendors = async () => {
+  const loadInitialVendors = async () => {
     setLoading(true);
+    setPage(1);
     try {
-      const params = {};
+      const params = { limit: PAGE_SIZE, page: 1 };
       if (category && category !== 'all') params.category = category;
       if (location) params.location = location;
       if (maxPrice) params.maxPrice = maxPrice;
 
-      const data = await api.getVendors(params);
-      setVendors(data);
+      const res = await getVendorsCached(params);
+
+      if (res && res.vendors) {
+        setVendors(res.vendors);
+        setTotalCount(res.totalCount || 0);
+        setHasMore(res.hasMore || false);
+      } else if (Array.isArray(res)) {
+        setVendors(res.slice(0, PAGE_SIZE));
+        setTotalCount(res.length);
+        setHasMore(res.length > PAGE_SIZE);
+      }
     } catch (err) {
       console.error('Failed to fetch vendors:', err);
     } finally {
@@ -32,7 +49,7 @@ export default function VendorsPage() {
   };
 
   useEffect(() => {
-    loadVendors();
+    loadInitialVendors();
   }, [category, location, maxPrice]);
 
   const handleClearFilters = () => {
@@ -40,6 +57,29 @@ export default function VendorsPage() {
     setLocation('');
     setMaxPrice('');
     setSearchParams({});
+  };
+
+  const handleLoadMore = async () => {
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const params = { limit: PAGE_SIZE, page: nextPage };
+      if (category && category !== 'all') params.category = category;
+      if (location) params.location = location;
+      if (maxPrice) params.maxPrice = maxPrice;
+
+      const res = await getVendorsCached(params);
+
+      if (res && res.vendors) {
+        setVendors(prev => [...prev, ...res.vendors]);
+        setPage(nextPage);
+        setHasMore(res.hasMore || false);
+      }
+    } catch (err) {
+      console.error('Failed to load more vendors:', err);
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   return (
@@ -86,7 +126,7 @@ export default function VendorsPage() {
               placeholder="לדוגמה: 5000" 
               value={maxPrice}
               onChange={e => setMaxPrice(e.target.value)}
-              step="500"
+              min="0"
             />
           </div>
 
@@ -108,11 +148,30 @@ export default function VendorsPage() {
           <button onClick={handleClearFilters} className="btn btn-primary">הצג את כל הספקים</button>
         </div>
       ) : (
-        <div className="grid-vendors">
-          {vendors.map(v => (
-            <VendorCard key={v.id} vendor={v} />
-          ))}
-        </div>
+        <>
+          <div className="grid-vendors">
+            {vendors.map(v => (
+              <VendorCard key={v.id} vendor={v} />
+            ))}
+          </div>
+
+          {/* Server-Side Paginated Load More Button */}
+          {hasMore && (
+            <div style={{ textAlign: 'center', marginTop: '40px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                מוצגים <b>{vendors.length}</b> מתוך <b>{totalCount}</b> ספקים בקטלוג
+              </p>
+              <button 
+                onClick={handleLoadMore} 
+                className="btn btn-secondary" 
+                disabled={loadingMore}
+                style={{ padding: '12px 28px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <ChevronDown size={18} /> {loadingMore ? 'טוען ספקים מ-SQL...' : `טען ספקים נוספים (${totalCount - vendors.length} נותרו ב-DB)`}
+              </button>
+            </div>
+          )}
+        </>
       )}
 
     </div>

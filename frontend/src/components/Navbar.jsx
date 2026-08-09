@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Sparkles, Calendar, User, LogOut, Menu, X, Shield, Store } from 'lucide-react';
+import { useSocket } from '../context/SocketContext';
+import { Sparkles, Calendar, User, LogOut, Menu, X, Shield, Store, MessageSquare } from 'lucide-react';
 
 export default function Navbar({ onOpenAIModal }) {
   const { user, logout } = useAuth();
+  const { unreadCount, openChatWithUser } = useSocket();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -51,7 +52,7 @@ export default function Navbar({ onOpenAIModal }) {
         </Link>
 
         {/* Desktop Nav Links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <Link to="/" style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>דף הבית</Link>
           <Link to="/vendors" style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>קטלוג ספקים</Link>
           
@@ -65,7 +66,23 @@ export default function Navbar({ onOpenAIModal }) {
           </button>
 
           {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {/* Live Chat Button */}
+              <button 
+                onClick={() => openChatWithUser(null)} 
+                className="btn btn-secondary btn-sm"
+                style={{ position: 'relative', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                title="צ'אט והודעות בלייב"
+              >
+                <MessageSquare size={16} color="var(--color-primary)" />
+                <span>צ'אט</span>
+                {unreadCount > 0 && (
+                  <span className="badge badge-gold" style={{ position: 'absolute', top: '-6px', right: '-6px', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '50%' }}>
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
               {user.role === 'customer' && (
                 <Link to="/dashboard/customer" className="btn btn-secondary btn-sm">
                   <Calendar size={16} /> האירועים שלי
@@ -75,12 +92,6 @@ export default function Navbar({ onOpenAIModal }) {
               {user.role === 'vendor' && (
                 <Link to="/dashboard/vendor" className="btn btn-secondary btn-sm">
                   <Store size={16} /> אזור ספק
-                </Link>
-              )}
-
-              {user.role === 'admin' && (
-                <Link to="/dashboard/admin" className="btn btn-secondary btn-sm" style={{ borderColor: '#f59e0b' }}>
-                  <Shield size={16} color="#f59e0b" /> דשבורד מנהל
                 </Link>
               )}
 

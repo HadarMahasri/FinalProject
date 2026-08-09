@@ -1,18 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { api } from '../services/api';
+import { Link, useNavigate } from 'react-router-dom';
+import { useData } from '../context/DataContext';
 import VendorCard from '../components/VendorCard';
-import { Sparkles, Camera, Disc, UtensilsCrossed, Building2, Flower2, Search, ArrowLeft, ShieldCheck, Zap } from 'lucide-react';
+import { 
+  Sparkles, Camera, Disc, UtensilsCrossed, Building2, Flower2, Search, 
+  ArrowLeft, ShieldCheck, Zap, Heart, Star, CheckCircle, MessageSquare, MapPin
+} from 'lucide-react';
 
 export default function HomePage({ onOpenAIModal }) {
+  const navigate = useNavigate();
+  const { getVendorsCached } = useData();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Search Bar State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchCategory, setSearchCategory] = useState('');
 
   useEffect(() => {
     async function loadFeaturedVendors() {
       try {
-        const data = await api.getVendors();
-        setVendors(data.slice(0, 4)); // Show top 4 vendors
+        const data = await getVendorsCached({ limit: 4 });
+        const list = data?.vendors || (Array.isArray(data) ? data : []);
+        setVendors(list.slice(0, 4));
       } catch (err) {
         console.error('Failed to load vendors:', err);
       } finally {
@@ -20,14 +30,22 @@ export default function HomePage({ onOpenAIModal }) {
       }
     }
     loadFeaturedVendors();
-  }, []);
+  }, [getVendorsCached]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set('search', searchQuery.trim());
+    if (searchCategory) params.set('category', searchCategory);
+    navigate(`/vendors?${params.toString()}`);
+  };
 
   const categories = [
-    { key: 'photography', name: 'צילום אירועים', icon: Camera, color: '#6366f1' },
-    { key: 'dj_music', name: 'תקליטן & מוזיקה', icon: Disc, color: '#ec4899' },
-    { key: 'catering', name: 'קייטרינג & שף', icon: UtensilsCrossed, color: '#f59e0b' },
-    { key: 'venue', name: 'אולמות & גנים', icon: Building2, color: '#10b981' },
-    { key: 'design_flowers', name: 'עיצוב & פרחים', icon: Flower2, color: '#8b5cf6' }
+    { key: 'photography', name: 'צלמים וסטודיו', icon: Camera, color: '#6366f1' },
+    { key: 'dj_music', name: 'תקליטנים ומוזיקה', icon: Disc, color: '#ec4899' },
+    { key: 'catering', name: 'קייטרינג ושפים', icon: UtensilsCrossed, color: '#f59e0b' },
+    { key: 'venue', name: 'גני אירועים ואולמות', icon: Building2, color: '#10b981' },
+    { key: 'design_flowers', name: 'עיצוב אירועים ופרחים', icon: Flower2, color: '#8b5cf6' }
   ];
 
   return (
@@ -35,45 +53,41 @@ export default function HomePage({ onOpenAIModal }) {
       {/* Hero Section */}
       <section style={{
         position: 'relative',
-        padding: '100px 0 80px 0',
+        padding: '90px 0 70px 0',
         textAlign: 'center',
-        background: 'radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 60%)'
+        background: 'radial-gradient(circle at 50% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 60%)'
       }}>
         <div className="container">
           
-          <div className="badge badge-gold" style={{ marginBottom: '20px', fontSize: '0.85rem' }}>
-            ✨ פלטפורמת האירועים של ישראל 2026
-          </div>
-
-          <h1 style={{ fontSize: 'clamp(2.4rem, 5vw, 4rem)', marginBottom: '24px', fontWeight: 800, letterSpacing: '-1px' }}>
-            מתכננים אירוע? סוגרים את <br />
-            <span className="gradient-text">הספקים הטובים ביותר בקליק</span>
+          <h1 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', marginBottom: '16px', fontWeight: 800, lineHeight: 1.2 }}>
+            סוגרים ספקים לאירוע <span className="gradient-text">בקלות ובביטחון</span>
           </h1>
 
-          <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', maxWidth: '700px', margin: '0 auto 40px auto' }}>
-            חיפוש ספקים מובילים, תיאום מחירים, ניהול אירועים אישיים, וייעוץ תקציבי חכם מבוסס AI - הכל במקום אחד.
+          <p style={{ fontSize: '1.15rem', color: 'var(--color-text-muted)', maxWidth: '720px', margin: '0 auto 36px auto', lineHeight: 1.6 }}>
+            חפשו צלמים, תקליטנים, קייטרינג ואולמות מומלצים, השוו מחירים, צרו קשר ישיר בצ'אט בלייב ונהלו את תקציב האירוע שלכם בנוחות מרבית.
           </p>
 
-          {/* Quick Actions */}
+          {/* Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
-            <Link to="/vendors" className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1.1rem' }}>
-              <Search size={20} /> לספורים ולספקים המובילים
+            <Link to="/vendors" className="btn btn-primary" style={{ padding: '14px 28px', fontSize: '1.05rem' }}>
+              <Search size={18} /> לצפייה בקטלוג הספקים
             </Link>
 
-            <button onClick={onOpenAIModal} className="btn btn-gold" style={{ padding: '14px 28px', fontSize: '1.1rem' }}>
-              <Sparkles size={20} /> תכנון תקציב חכם ב-AI
+            <button onClick={onOpenAIModal} className="btn btn-gold" style={{ padding: '14px 28px', fontSize: '1.05rem' }}>
+              <Sparkles size={18} /> תכנון תקציב וצ'ק-ליסט ב-AI
             </button>
           </div>
 
         </div>
       </section>
 
-      {/* Categories Bar */}
-      <section style={{ padding: '40px 0' }}>
+      {/* Category Icons Section */}
+      <section style={{ padding: '50px 0' }}>
         <div className="container">
-          <h2 style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: '30px' }}>
-            חיפוש לפי קטגוריה
+          <h2 style={{ fontSize: '1.4rem', textAlign: 'center', marginBottom: '24px' }}>
+            מה אתם מחפשים לאירוע שלכם?
           </h2>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
             {categories.map(cat => {
               const Icon = cat.icon;
@@ -88,10 +102,12 @@ export default function HomePage({ onOpenAIModal }) {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '12px'
+                    gap: '12px',
+                    textDecoration: 'none',
+                    transition: 'transform 0.2s ease, border-color 0.2s ease'
                   }}
                 >
-                  <div style={{ width: '50px', height: '50px', borderRadius: '14px', background: `${cat.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '54px', height: '54px', borderRadius: '16px', background: `${cat.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Icon size={26} color={cat.color} />
                   </div>
                   <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text-main)' }}>{cat.name}</span>
@@ -102,21 +118,23 @@ export default function HomePage({ onOpenAIModal }) {
         </div>
       </section>
 
-      {/* Featured Vendors Section */}
-      <section style={{ padding: '60px 0' }}>
+      {/* Featured Real Vendors Section */}
+      <section style={{ padding: '50px 0' }}>
         <div className="container">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h2 style={{ fontSize: '1.8rem' }}>ספקים מומלצים</h2>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem' }}>הספקים המובילים ביותר עם הדירוגים הגבוהים ביותר ברשת</p>
+              <h2 style={{ fontSize: '1.6rem', margin: 0 }}>ספקים מומלצים במיוחד</h2>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', marginTop: '4px' }}>
+                הספקים המובילים ביותר שזכו לדירוגים הגבוהים ביותר מבעלי אירועים
+              </p>
             </div>
-            <Link to="/vendors" style={{ color: 'var(--color-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              לכל הספקים <ArrowLeft size={16} />
+            <Link to="/vendors" className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              לכל קטלוג הספקים <ArrowLeft size={16} />
             </Link>
           </div>
 
           {loading ? (
-            <p style={{ textAlign: 'center', color: 'var(--color-text-muted)' }}>טוען ספקים מומלצים...</p>
+            <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '40px' }}>טוען ספקים מומלצים...</p>
           ) : (
             <div className="grid-vendors">
               {vendors.map(v => (
@@ -127,34 +145,47 @@ export default function HomePage({ onOpenAIModal }) {
         </div>
       </section>
 
-      {/* Feature Highlights */}
-      <section style={{ padding: '60px 0', background: 'rgba(19, 27, 46, 0.5)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
-        <div className="container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px' }}>
-          
-          <div className="glass-card" style={{ padding: '30px' }}>
-            <div style={{ padding: '12px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '12px', width: 'fit-content', marginBottom: '16px' }}>
-              <ShieldCheck size={28} color="var(--color-primary)" />
-            </div>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>ספקים מאושרים ומאומתים</h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>כל ספק נבדק ומאושר ע"י מנהלי המערכת כולל שקיפות מחירים וחוות דעת אמיתיות.</p>
-          </div>
+      {/* How it Works Section */}
+      <section style={{ padding: '70px 0', background: 'rgba(15, 23, 42, 0.6)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
+        <div className="container">
+          <h2 style={{ fontSize: '1.6rem', textAlign: 'center', marginBottom: '10px' }}>
+            איך EventHub עוזר לכם לסגור אירוע מושלם?
+          </h2>
+          <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', maxWidth: '600px', margin: '0 auto 40px auto' }}>
+            תהליך פשוט, שקוף ונוח מהחיפוש הראשון ועד ליום האירוע
+          </p>
 
-          <div className="glass-card" style={{ padding: '30px' }}>
-            <div style={{ padding: '12px', background: 'rgba(245, 158, 11, 0.15)', borderRadius: '12px', width: 'fit-content', marginBottom: '16px' }}>
-              <Zap size={28} color="var(--color-gold)" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+            <div className="glass-card" style={{ padding: '28px', textAlign: 'center' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(79, 70, 229, 0.2)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
+                1
+              </div>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>מוצאים ספקים מומלצים</h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                חופרים בקטלוג הספקים, מעיינים בגלריות העבודות, בודקים חוות דעת מאומתות ומשווים מחירי פתיחה.
+              </p>
             </div>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>יועץ AI אישי</h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>אלגוריתם חכם שיעזור לך להגדיר תקציב נכון, לחלק את הכסף בין הספקים ולקבל צ'קליסט מלא.</p>
-          </div>
 
-          <div className="glass-card" style={{ padding: '30px' }}>
-            <div style={{ padding: '12px', background: 'rgba(236, 72, 153, 0.15)', borderRadius: '12px', width: 'fit-content', marginBottom: '16px' }}>
-              <Sparkles size={28} color="var(--color-secondary)" />
+            <div className="glass-card" style={{ padding: '28px', textAlign: 'center' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
+                2
+              </div>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>מדברים בלייב בצ'אט</h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                שולחים בקשת תיאום או מתכתבים בזמן אמת בצ'אט הישיר מול הספקים לקבלת הצעת מחיר מותאמת אישית.
+              </p>
             </div>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>דשבורד אישי מקצה לקצה</h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>ניהול בקשות, הזמנות, מעקב סטטוסים ותקשורת ישירה מול הספקים בנוחות מרבית.</p>
-          </div>
 
+            <div className="glass-card" style={{ padding: '28px', textAlign: 'center' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
+                3
+              </div>
+              <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>מנהלים תקציב ומשימות</h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                עוקבים אחר ניצול התקציב של האירוע בדשבורד, מנהלים צ'ק-ליסט משימות וסוגרים אירוע בראש שקט.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 

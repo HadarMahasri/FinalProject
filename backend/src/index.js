@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const path = require('path');
 require('dotenv').config();
 
@@ -7,11 +9,44 @@ const authRoutes = require('./routes/authRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const taskRoutes = require('./routes/taskRoutes');
 const aiRoutes = require('./routes/aiRoutes');
-const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Socket.io Server Configuration
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+  }
+});
+
+// Pass `io` instance to all HTTP controllers via req.io middleware
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// Socket.io Connection & Room Handling
+io.on('connection', (socket) => {
+  console.log(`⚡ WebSocket client connected: ${socket.id}`);
+
+  socket.on('join_user_room', (userId) => {
+    if (userId) {
+      const roomName = `user_${userId}`;
+      socket.join(roomName);
+      console.log(`👤 User ${userId} joined room ${roomName}`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`🔌 WebSocket client disconnected: ${socket.id}`);
+  });
+});
 
 // Body Parsers
 app.use(express.json());
@@ -22,7 +57,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health Check Route
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'EventHub Backend API is running smoothly!', timestamp: new Date() });
+  res.json({ status: 'OK', message: 'EventHub Backend API with Socket.io is running smoothly!', timestamp: new Date() });
 });
 
 // API Routes
@@ -30,8 +65,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/tasks', taskRoutes);
 app.use('/api/ai', aiRoutes);
-app.use('/api/admin', adminRoutes);
 
 // Serve React Frontend Production Build (if available)
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
@@ -58,8 +94,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 EventHub Server is running on port ${PORT}`);
+server.listen(PORT, () => {
+  console.log(`🚀 EventHub Server with Real-Time WebSockets is running on port ${PORT}`);
   console.log(`📡 API available at http://localhost:${PORT}/api`);
 });

@@ -3,9 +3,19 @@ const UserModel = require('../models/userModel');
 
 async function getAllVendors(req, res) {
   try {
-    const { category, location, max_price, search } = req.query;
-    const vendors = await VendorModel.getAllVendors({ category, location, max_price, search });
-    res.json(vendors);
+    const { category, location, max_price, maxPrice, search, limit, page } = req.query;
+    const effectiveMaxPrice = maxPrice || max_price;
+
+    const result = await VendorModel.getAllVendors({
+      category,
+      location,
+      maxPrice: effectiveMaxPrice,
+      search,
+      limit,
+      page
+    });
+
+    res.json(result);
   } catch (error) {
     console.error('Error in vendorController.getAllVendors:', error);
     res.status(500).json({ message: 'שגיאה בשליפת קטלוג הספקים.' });
@@ -92,7 +102,7 @@ async function uploadMedia(req, res) {
 
     res.json({
       message: 'הקובץ הועלה בהצלחה!',
-      media: { id: mediaId, vendor_id: vendor.id, file_path: filePath, file_type: req.file.mimetype }
+      media: { id: mediaId, file_path: filePath }
     });
   } catch (error) {
     console.error('Error in vendorController.uploadMedia:', error);

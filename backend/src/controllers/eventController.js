@@ -26,8 +26,7 @@ async function createEvent(req, res) {
       notes
     });
 
-    const newEvent = await EventModel.getEventById(eventId);
-    res.status(201).json({ message: 'האירוע נוצר בהצלחה!', event: newEvent });
+    res.status(201).json({ message: 'האירוע נוצר בהצלחה!', id: eventId });
   } catch (error) {
     console.error('Error in eventController.createEvent:', error);
     res.status(500).json({ message: 'שגיאה ביצירת האירוע.' });
@@ -106,8 +105,8 @@ async function createBooking(req, res) {
       return res.status(400).json({ message: 'נא לספק מזהה אירוע ומזהה ספק.' });
     }
 
-    const bookingId = await EventModel.createBooking({ event_id, vendor_id, notes, agreed_price });
-    res.status(201).json({ message: 'בקשת ההזמנה נשלחה לספק בהצלחה!', bookingId });
+    await EventModel.createBooking({ event_id, vendor_id, notes, agreed_price });
+    res.status(201).json({ message: 'בקשת ההזמנה נשלחה לספק בהצלחה!' });
   } catch (error) {
     console.error('Error in eventController.createBooking:', error);
     res.status(500).json({ message: 'שגיאה בשליחת בקשת ההזמנה.' });
@@ -121,8 +120,9 @@ async function getVendorBookings(req, res) {
       return res.status(404).json({ message: 'פרופיל ספק לא נמצא.' });
     }
 
-    const bookings = await EventModel.getBookingsForVendor(vendor.id);
-    res.json(bookings);
+    const { limit, page } = req.query;
+    const result = await EventModel.getBookingsForVendor(vendor.id, { limit, page });
+    res.json(result);
   } catch (error) {
     console.error('Error in eventController.getVendorBookings:', error);
     res.status(500).json({ message: 'שגיאה בשליפת ההזמנות של הספק.' });
@@ -132,8 +132,9 @@ async function getVendorBookings(req, res) {
 async function getCustomerBookings(req, res) {
   try {
     const customer_id = req.user.id;
-    const bookings = await EventModel.getBookingsForCustomer(customer_id);
-    res.json(bookings);
+    const { limit, page } = req.query;
+    const result = await EventModel.getBookingsForCustomer(customer_id, { limit, page });
+    res.json(result);
   } catch (error) {
     console.error('Error in eventController.getCustomerBookings:', error);
     res.status(500).json({ message: 'שגיאה בשליפת הצעות המחיר וההזמנות.' });

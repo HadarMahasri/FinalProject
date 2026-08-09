@@ -27,7 +27,37 @@ export default function VendorCard({ vendor }) {
           onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
           onMouseOut={e => e.currentTarget.style.transform = 'scale(1.0)'}
         />
-        <span className="badge badge-primary" style={{ position: 'absolute', top: '12px', right: '12px' }}>
+        
+        {/* Top Dark Gradient Overlay for Guaranteed Badge Readability */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '60px',
+          background: 'linear-gradient(to bottom, rgba(15, 23, 42, 0.75) 0%, transparent 100%)',
+          pointerEvents: 'none'
+        }} />
+
+        {/* High-Contrast Crisp Category Badge */}
+        <span 
+          style={{ 
+            position: 'absolute', 
+            top: '12px', 
+            right: '12px',
+            background: 'rgba(15, 23, 42, 0.9)',
+            color: '#ffffff',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            padding: '5px 12px',
+            borderRadius: '20px',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+            letterSpacing: '0.3px'
+          }}
+        >
           {categoryLabels[vendor.category] || vendor.category}
         </span>
       </div>
