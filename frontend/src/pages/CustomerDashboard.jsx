@@ -581,13 +581,15 @@ export default function CustomerDashboard({ onOpenAIModal }) {
                       </span>
                     </div>
 
-                    <button 
-                      onClick={() => openChatWithUser(b.vendor_user_id || b.vendor_id)} 
-                      className="btn btn-gold btn-sm"
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px' }}
-                    >
-                      <MessageSquare size={16} /> צ'אט
-                    </button>
+                    {b.status === 'approved' && (
+                      <button 
+                        onClick={() => openChatWithUser(b.vendor_user_id || b.vendor_id)} 
+                        className="btn btn-gold btn-sm"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px' }}
+                      >
+                        <MessageSquare size={16} /> צ'אט עם הספק
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

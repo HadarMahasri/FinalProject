@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, Sparkles, AlertCircle } from 'lucide-react';
@@ -8,8 +8,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { user, token, login } = useAuth();
   const navigate = useNavigate();
+
+  // Auto-redirect if user is already logged in
+  useEffect(() => {
+    if (user || token) {
+      if (user?.role === 'customer') navigate('/dashboard/customer', { replace: true });
+      else if (user?.role === 'vendor') navigate('/dashboard/vendor', { replace: true });
+      else navigate('/', { replace: true });
+    }
+  }, [user, token, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

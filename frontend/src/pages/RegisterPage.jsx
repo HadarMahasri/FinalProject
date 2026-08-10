@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, Sparkles, AlertCircle, Building2, User } from 'lucide-react';
@@ -19,8 +19,17 @@ export default function RegisterPage() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { user, token, register } = useAuth();
   const navigate = useNavigate();
+
+  // Auto-redirect if user is already logged in
+  useEffect(() => {
+    if (user || token) {
+      if (user?.role === 'customer') navigate('/dashboard/customer', { replace: true });
+      else if (user?.role === 'vendor') navigate('/dashboard/vendor', { replace: true });
+      else navigate('/', { replace: true });
+    }
+  }, [user, token, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

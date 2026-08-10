@@ -319,7 +319,7 @@ export default function VendorDashboard() {
                         </div>
 
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                          {b.customer_id && (
+                          {b.customer_id && b.status === 'approved' && (
                             <button onClick={() => openChatWithUser(b.customer_id)} className="btn btn-gold btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <MessageSquare size={16} /> צ'אט עם הלקוח/ה
                             </button>

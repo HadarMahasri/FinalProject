@@ -153,13 +153,13 @@ export default function ChatModal() {
           maxHeight: '90vh',
           padding: 0,
           display: 'grid',
-          gridTemplateColumns: '280px 1fr',
+          gridTemplateColumns: '280px minmax(0, 1fr)',
           overflow: 'hidden',
           borderRadius: '16px'
         }}
       >
         {/* Left Sidebar: Conversations List */}
-        <div style={{ background: 'rgba(15, 23, 42, 0.8)', borderLeft: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ background: 'rgba(15, 23, 42, 0.8)', borderLeft: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ padding: '16px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <MessageSquare size={18} color="var(--color-primary)" />
             <h3 style={{ fontSize: '1rem', margin: 0 }}>הודעות וצ'אט</h3>
@@ -208,10 +208,10 @@ export default function ChatModal() {
         </div>
 
         {/* Right Area: Messages Chat Room */}
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--color-bg-dark)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0, minHeight: 0, overflow: 'hidden', background: 'var(--color-bg-dark)' }}>
           
           {/* Chat Header */}
-          <div style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.9)', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '16px 20px', background: 'rgba(15, 23, 42, 0.9)', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
             <div>
               <h3 style={{ fontSize: '1.1rem', margin: 0 }}>
                 {currentChatUser ? (currentChatUser.other_user_role === 'vendor' && currentChatUser.business_name ? currentChatUser.business_name : currentChatUser.other_user_name) : 'שיחה פרטית'}
@@ -227,7 +227,7 @@ export default function ChatModal() {
           </div>
 
           {/* Messages List Area */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {!activeChatUserId ? (
               <div style={{ textAlign: 'center', marginTop: '100px', color: 'var(--color-text-muted)' }}>
                 <p>בחר שיחה מהרשימה בצד ימין כדי להתחיל להתכתב בלייב</p>
@@ -244,12 +244,14 @@ export default function ChatModal() {
                     key={m.id} 
                     style={{
                       alignSelf: isMe ? 'flex-end' : 'flex-start',
-                      maxWidth: '70%',
+                      maxWidth: '75%',
                       background: isMe ? 'linear-gradient(135deg, #4f46e5, #4338ca)' : 'rgba(30, 41, 59, 0.9)',
                       color: '#fff',
                       padding: '12px 16px',
                       borderRadius: isMe ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                      wordBreak: 'break-word',
+                      overflowWrap: 'anywhere'
                     }}
                   >
                     {!isMe && (
@@ -257,7 +259,7 @@ export default function ChatModal() {
                         {m.sender_name}
                       </span>
                     )}
-                    <p style={{ fontSize: '0.9rem', margin: 0, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{m.content}</p>
+                    <p style={{ fontSize: '0.9rem', margin: 0, lineHeight: 1.4, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.content}</p>
                     <span style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.6)', display: 'block', textAlign: 'left', marginTop: '4px' }}>
                       {new Date(m.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
                     </span>
@@ -270,7 +272,7 @@ export default function ChatModal() {
 
           {/* Message Input Footer */}
           {activeChatUserId && (
-            <form onSubmit={handleSendMessage} style={{ padding: '16px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '10px', background: 'rgba(15, 23, 42, 0.9)' }}>
+            <form onSubmit={handleSendMessage} style={{ padding: '16px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '10px', background: 'rgba(15, 23, 42, 0.9)', flexShrink: 0 }}>
               <input 
                 type="text" 
                 className="form-input" 

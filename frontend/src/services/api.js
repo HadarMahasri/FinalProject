@@ -71,6 +71,7 @@ export const api = {
 
   // AI Assistant API
   getAIPlan: (planParams) => fetchAPI('/ai/plan', { method: 'POST', body: JSON.stringify(planParams) }),
+  askAI: (prompt) => fetchAPI('/ai/ask', { method: 'POST', body: JSON.stringify({ prompt }) }),
 
   // Messages & Real-Time Chat API
   sendMessage: (msgData) => fetchAPI('/messages', { method: 'POST', body: JSON.stringify(msgData) }),
