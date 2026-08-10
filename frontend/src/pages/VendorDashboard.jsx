@@ -224,7 +224,7 @@ export default function VendorDashboard() {
             transition: 'all 0.2s ease'
           }}
         >
-          <FileText size={18} /> פניות מספקים ({bookingsTotalCount || bookings.length})
+          <FileText size={18} /> פניות ({bookingsTotalCount || bookings.length})
         </button>
 
         <button
@@ -279,7 +279,7 @@ export default function VendorDashboard() {
         <div className="animate-fade-in">
           <div className="glass-card" style={{ padding: '28px' }}>
             <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={22} color="var(--color-primary)" /> פניות והצעות מחיר מלקוחות ({bookingsTotalCount || bookings.length})
+              <FileText size={22} color="var(--color-primary)" /> פניות ({bookingsTotalCount || bookings.length})
             </h2>
 
             {bookings.length === 0 ? (

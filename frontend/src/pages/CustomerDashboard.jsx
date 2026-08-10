@@ -377,7 +377,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
             transition: 'all 0.2s ease'
           }}
         >
-          <FileText size={18} /> פניות מספקים ({bookings.length})
+          <FileText size={18} /> פניות ({bookings.length})
         </button>
 
         <button 
@@ -529,7 +529,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
         <div className="animate-fade-in">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
             <h2 style={{ fontSize: '1.4rem', margin: 0 }}>
-              פניות והצעות מחיר מספקים {selectedEventId ? `(${selectedEvent?.title})` : `(כל ${bookings.length} הפניות)`}
+              פניות {selectedEventId ? `(${selectedEvent?.title})` : `(כל ${bookings.length} הפניות)`}
             </h2>
 
             {events.length > 0 && (
