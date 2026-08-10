@@ -60,14 +60,16 @@ export default function Navbar({ onOpenAIModal }) {
           <Link to="/" style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>דף הבית</Link>
           <Link to="/vendors" style={{ color: 'var(--color-text-main)', fontWeight: 600 }}>קטלוג ספקים</Link>
           
-          <button 
-            onClick={onOpenAIModal}
-            className="btn btn-gold btn-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-          >
-            <Sparkles size={16} />
-            יועץ AI לתכנון אירוע
-          </button>
+          {user?.role !== 'vendor' && (
+            <button 
+              onClick={onOpenAIModal}
+              className="btn btn-gold btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Sparkles size={16} />
+              יועץ AI לתכנון אירוע
+            </button>
+          )}
 
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
