@@ -226,7 +226,7 @@ export default function RegisterPage() {
 
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%', marginTop: '12px' }}>
             <UserPlus size={18} />
-            {loading ? 'יוצר חשבון...' : 'סים הרשמה'}
+            {loading ? 'יוצר חשבון...' : 'סיום הרשמה'}
           </button>
         </form>
 

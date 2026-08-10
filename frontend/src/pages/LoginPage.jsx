@@ -90,9 +90,7 @@ export default function LoginPage() {
           עדיין אין לך חשבון? <Link to="/register" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>הרשם עכשיו</Link>
         </div>
 
-        <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-border)', fontSize: '0.8rem', color: 'var(--color-text-subtle)', textAlign: 'center' }}>
-          מידע לבדיקה מהירה: אימייל: <b>michal@gmail.com</b> או <b>roey@studioshahar.co.il</b> (סיסמה: <b>password123</b>)
-        </div>
+
 
       </div>
     </div>
