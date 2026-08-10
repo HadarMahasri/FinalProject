@@ -1,7 +1,9 @@
-// Smart AI Event Planner Assistant Controller (Anthropic Claude 4.6 Live Integration)
+// בקר סוכן הבינה המלאכותית (AI Event Planner Assistant Controller)
+// קובץ זה מנהל את האינטגרציה מול מודלי הבינה המלאכותית (Anthropic Claude) ומספק מנגנון גיבוי חכם
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
+// מנגנון חישוב אלגוריתמי מובנה לתכנון תקציב (מופעל במידה ואין מפתח API זמין או במקרה של תקלת רשת)
 function buildFallbackPlan({ type, parsedBudget, parsedGuests, location }) {
   const venueShare = Math.round(parsedBudget * 0.45);
   const cateringShare = Math.round(parsedBudget * 0.25);
@@ -36,6 +38,7 @@ function buildFallbackPlan({ type, parsedBudget, parsedGuests, location }) {
   };
 }
 
+// מנוע ייעוץ מובנה בעברית לשאלות בצ'אט (מופעל במקרה של בעיית רשת או Quota מול API חיצוני)
 function buildSmartAdvice(prompt) {
   const p = prompt.toLowerCase();
 
@@ -58,12 +61,14 @@ function buildSmartAdvice(prompt) {
   return `✨ **טיפ מיועץ האירועים EventHub לגבי "${prompt}"**:\nכדי להבטיח אירוע מושלם, מומלץ תמיד:\n1. לפנות ל-2-3 ספקים מומלצים בקטלוג EventHub ולהשוות הצעות מחיר.\n2. לקרוא חוות דעת ודירוגים מאומתים מבעלי אירועים קודמים.\n3. לקבוע פגישת הכרות אישית מול הספק ולסגור חוזה שקוף עם מועדי תשלום מוגדרים.`;
 }
 
-// Call Anthropic Claude Live API with Exact Model IDs
+// פונקציית התקשורת האסינכרונית בלייב מול ה-REST API של Anthropic Claude
 async function callClaudeAPI(systemPrompt, userPrompt) {
+  // 1. קריאת מפתח ה-API המוצפן מתוך משתני הסביבה (process.env)
   const apiKey = process.env.CLAUDE_API_KEY;
   if (!apiKey || !apiKey.trim()) return null;
 
   const cleanKey = apiKey.trim();
+  // 2. רשימת המודלים הנתמכים לפי סדר עדיפויות (בראשם claude-sonnet-4-6)
   const modelsToTry = [
     'claude-sonnet-4-6',
     'claude-sonnet-4-5-20250929',
@@ -73,6 +78,7 @@ async function callClaudeAPI(systemPrompt, userPrompt) {
 
   for (const model of modelsToTry) {
     try {
+      // 3. שליחת בקשת HTTP POST אסינכרונית ל-Endpoint הרשמי של Anthropic Messages
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -83,13 +89,14 @@ async function callClaudeAPI(systemPrompt, userPrompt) {
         body: JSON.stringify({
           model: model,
           max_tokens: 1024,
-          system: systemPrompt,
+          system: systemPrompt, // הנחיית תפקיד ה-AI
           messages: [
-            { role: 'user', content: userPrompt }
+            { role: 'user', content: userPrompt } // קלט המשתמש
           ]
         })
       });
 
+      // 4. אם התשובה תקינה - מפרקים את ה-JSON ומחזירים את הטקסט
       if (response.ok) {
         const data = await response.json();
         if (data && data.content && data.content[0] && data.content[0].text) {
@@ -108,31 +115,38 @@ async function callClaudeAPI(systemPrompt, userPrompt) {
   return null;
 }
 
+// 1. Controller function לתכנון תקציב וצ'ק-ליסט (POST /api/ai/plan)
 async function getAIPlan(req, res) {
   try {
+    // שליפת פרטי האירוע שהמשתמש מילא בטופס
     const { eventType, budget, guestCount, location } = req.body;
 
     const parsedBudget = Number(budget) || 50000;
     const parsedGuests = Number(guestCount) || 150;
     const type = eventType || 'אירוע משפחתי';
 
+    // הנדסת פרומפט (Prompt Engineering) המנחה את ה-AI להחזיר JSON מובנה בלבד
     const systemPrompt = 'את/ה יועץ/ת תכנון אירועים ישראלי/ת מנוסה (EventHub Claude Agent). בהינתן פרטי אירוע, בנה/י תוכנית תקציב מפורטת בפורמט JSON בלבד התואם בדיוק לסכמה הבאה: { "summary": "...", "recommendedBreakdown": [{"category": "...", "recommendedAmount": 1000, "percentage": "45%"}], "adviceList": ["..."], "checklist": ["..."] }. החזר JSON בלבד ללא שום דיסקליימרים.';
     const userPrompt = `סוג אירוע: ${type}\nתקציב כולל: ₪${parsedBudget}\nכמות מוזמנים: ${parsedGuests}\nאזור: ${location || 'המרכז'}`;
 
     let plan;
+    // א. פנייה בלייב למודל ה-Claude
     const rawResult = await callClaudeAPI(systemPrompt, userPrompt);
 
     if (rawResult) {
       try {
+        // ב. ניקוי תגיות Markdown והמרת ה-JSON למבנה נתונים תקין
         const cleanJson = rawResult.replace(/```json/g, '').replace(/```/g, '').trim();
         plan = JSON.parse(cleanJson);
       } catch (e) {
+        // ג. אם חלה שגיאה בפענוח - מפעילים את אלגוריתם ה-Fallback
         plan = buildFallbackPlan({ type, parsedBudget, parsedGuests, location });
       }
     } else {
       plan = buildFallbackPlan({ type, parsedBudget, parsedGuests, location });
     }
 
+    // החזרת תשובת ה-JSON לדפדפן
     res.json(plan);
   } catch (error) {
     console.error('Error in aiController.getAIPlan:', error);
@@ -140,6 +154,7 @@ async function getAIPlan(req, res) {
   }
 }
 
+// 2. Controller function לצ'אט הייעוץ החופשי (POST /api/ai/ask)
 async function askAI(req, res) {
   try {
     const { prompt } = req.body;
@@ -147,15 +162,19 @@ async function askAI(req, res) {
       return res.status(400).json({ message: 'נא למלא שאלה עבור היועץ.' });
     }
 
+    // הנדסת פרומפט המנחה את ה-AI לענות בצורה חמה ומפורטת בעברית
     const systemPrompt = 'את/ה יועץ/ת תכנון אירועים ישראלי/ת מומחה/ית ומנוסה מאוד (EventHub AI Agent מבית Anthropic Claude). ענה/י לשאלה בצורה מועילה, חמה, מפורטת ומעשית בעברית קולחת.';
     const userPrompt = prompt.trim();
 
+    // א. פנייה בלייב ל-Claude
     let answer = await callClaudeAPI(systemPrompt, userPrompt);
 
+    // ב. במידה ואין תשובה מה-API - הפעלת מנוע הידע המובנה
     if (!answer) {
       answer = buildSmartAdvice(userPrompt);
     }
 
+    // החזרת בועת התשובה לדפדפן
     res.json({ answer });
   } catch (error) {
     console.error('Error in aiController.askAI:', error);

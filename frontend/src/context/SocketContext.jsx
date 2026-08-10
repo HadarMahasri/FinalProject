@@ -5,6 +5,7 @@ import { api } from '../services/api';
 
 const SocketContext = createContext();
 
+// Context מרכזי לניהול חיבור ה-WebSocket בזמן אמת והתראות צ'אט
 export function SocketProvider({ children }) {
   const { user, token } = useAuth();
   const socketRef = useRef(null);
@@ -13,6 +14,7 @@ export function SocketProvider({ children }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [toastNotification, setToastNotification] = useState(null);
 
+  // שליפת מספר ההודעות שלא נקראו מהשרת
   const fetchUnreadCount = useCallback(async () => {
     if (!token) return;
     try {
@@ -24,6 +26,7 @@ export function SocketProvider({ children }) {
   }, [token]);
 
   useEffect(() => {
+    // 1. אם אין משתמש/טוקן מחובר - מנתקים את חיבור ה-Socket
     if (!token || !user?.id) {
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -33,13 +36,11 @@ export function SocketProvider({ children }) {
       return;
     }
 
-    // Connect Socket.io client, authenticating with the JWT so the server
-    // can verify our identity itself instead of trusting a client-supplied
-    // user id (that used to let anyone join anyone else's private room).
+    // 2. פתיחת חיבור WebSocket טהור מול השרת עם אימות טוקן JWT
     const socketUrl = window.location.origin;
     const socket = io(socketUrl, {
-      transports: ['websocket'],
-      auth: { token }
+      transports: ['websocket'], // שימוש ב-WebSockets בלבד ללא HTTP Polling
+      auth: { token } // העברת ה-JWT לאימות בשרת
     });
 
     socketRef.current = socket;
@@ -48,35 +49,40 @@ export function SocketProvider({ children }) {
       console.log('⚡ Socket.io connected and authenticated');
     });
 
-    // Listen for live incoming messages
+    // 3. האזנה להודעות נכנסות בזמן אמת (Server Push)
     socket.on('new_message', (msg) => {
       console.log('✉️ Live message received via WebSockets:', msg);
       
+      // א. עדכון מונה ההודעות שלא נקראו
       setUnreadCount(prev => prev + 1);
+      // ב. הקפצת התראת Toast קופצת בפינת המסך
       setToastNotification({
         title: `הודעה חדשה מאת ${msg.sender_name || 'משתמש'}`,
         content: msg.content,
         senderId: msg.sender_id
       });
 
-      // Hide toast after 4 seconds
+      // הסתרת ההתראה הקופצת כעבור 4 שניות
       setTimeout(() => setToastNotification(null), 4000);
     });
 
     fetchUnreadCount();
 
+    // ניקוי החיבור בעת יציאה/התנתקות
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
   }, [user?.id, token]);
 
+  // פתיחת חלונית הצ'אט מול משתמש ספציפי
   const openChatWithUser = (otherUserId) => {
     setActiveChatUserId(otherUserId);
     setIsChatOpen(true);
     setUnreadCount(0);
   };
 
+  // סגירת חלונית הצ'אט
   const closeChat = () => {
     setIsChatOpen(false);
     setActiveChatUserId(null);
@@ -97,7 +103,7 @@ export function SocketProvider({ children }) {
     }}>
       {children}
 
-      {/* Live Toast Notification Popup */}
+      {/* התראת Toast קופצת בלייב בפינת המסך בעת קבלת הודעה */}
       {toastNotification && (
         <div 
           className="animate-fade-in"
