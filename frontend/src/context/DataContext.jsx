@@ -1,16 +1,32 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import { api } from '../services/api';
+import { useAuth } from './AuthContext';
 
 const DataContext = createContext();
 
 export function DataProvider({ children }) {
+  const { user } = useAuth();
   // Multi-Key Cache Map Refs for instant memory retrieval
   const vendorsCacheMapRef = useRef({});
   const singleVendorCacheMapRef = useRef({});
   const customerBookingsCacheMapRef = useRef({});
   const vendorBookingsCacheMapRef = useRef({});
-  
+
   const [customerEventsCache, setCustomerEventsCache] = useState(null);
+
+  const clearUserCaches = useCallback(() => {
+    if (!user?.id) return;
+
+    console.log('user changed → clearing bookings and events caches');
+    customerBookingsCacheMapRef.current = {};
+    vendorBookingsCacheMapRef.current = {};
+    setCustomerEventsCache(null);
+  }, [user?.id]);
+
+  // Cleanup on user change
+  useEffect(() => {
+    clearUserCaches();
+  }, [user?.id, clearUserCaches]);
 
   // 1. Get Vendors List with Multi-Key In-Memory Cache Dictionary
   const getVendorsCached = useCallback(async (params = {}, forceRefresh = false) => {
@@ -47,7 +63,7 @@ export function DataProvider({ children }) {
     Object.keys(vendorsCacheMapRef.current).forEach(key => {
       const cached = vendorsCacheMapRef.current[key];
       if (cached && cached.vendors) {
-        cached.vendors = cached.vendors.map(v => 
+        cached.vendors = cached.vendors.map(v =>
           Number(v.id) === Number(vendorId)
             ? { ...v, ...updatedFields }
             : v
@@ -74,13 +90,13 @@ export function DataProvider({ children }) {
   }, []);
 
   const updateEventInCache = useCallback((eventId, updatedFields) => {
-    setCustomerEventsCache(prev => 
+    setCustomerEventsCache(prev =>
       (prev || []).map(ev => Number(ev.id) === Number(eventId) ? { ...ev, ...updatedFields } : ev)
     );
   }, []);
 
   const removeEventFromCache = useCallback((eventId) => {
-    setCustomerEventsCache(prev => 
+    setCustomerEventsCache(prev =>
       (prev || []).filter(ev => Number(ev.id) !== Number(eventId))
     );
   }, []);
@@ -114,7 +130,7 @@ export function DataProvider({ children }) {
     Object.keys(customerBookingsCacheMapRef.current).forEach(key => {
       const cached = customerBookingsCacheMapRef.current[key];
       if (cached && cached.bookings) {
-        cached.bookings = cached.bookings.map(b => 
+        cached.bookings = cached.bookings.map(b =>
           Number(b.id) === Number(bookingId) ? { ...b, status: newStatus } : b
         );
       }
@@ -123,7 +139,7 @@ export function DataProvider({ children }) {
     Object.keys(vendorBookingsCacheMapRef.current).forEach(key => {
       const cached = vendorBookingsCacheMapRef.current[key];
       if (cached && cached.bookings) {
-        cached.bookings = cached.bookings.map(b => 
+        cached.bookings = cached.bookings.map(b =>
           Number(b.id) === Number(bookingId) ? { ...b, status: newStatus } : b
         );
       }
@@ -151,7 +167,8 @@ export function DataProvider({ children }) {
       getCustomerBookingsCached,
       getVendorBookingsCached,
       updateBookingStatusInCache,
-      addBookingToCache
+      addBookingToCache,
+      clearUserCaches
     }}>
       {children}
     </DataContext.Provider>

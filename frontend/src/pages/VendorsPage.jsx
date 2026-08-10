@@ -86,7 +86,7 @@ export default function VendorsPage() {
 
   return (
     <div className="container" style={{ padding: '40px 20px' }}>
-      
+
       <div style={{ marginBottom: '32px', textAlign: 'center' }}>
         <h1 style={{ fontSize: '2.2rem', marginBottom: '8px' }} className="gradient-text">קטלוג הספקים</h1>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem' }}>חפש וסנן את הספקים המובילים ביותר לאירוע שלך</p>
@@ -95,7 +95,7 @@ export default function VendorsPage() {
       {/* Filters Bar */}
       <div className="glass-card" style={{ padding: '24px', marginBottom: '40px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'end' }}>
-          
+
           <div className="form-group">
             <label className="form-label">קטגוריה</label>
             <select className="form-select" value={category} onChange={e => setCategory(e.target.value)}>
@@ -111,10 +111,10 @@ export default function VendorsPage() {
 
           <div className="form-group">
             <label className="form-label">חיפוש לפי אזור</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="למשל: תל אביב, ירושלים, צפון" 
+            <input
+              type="text"
+              className="form-input"
+              placeholder="למשל: תל אביב, ירושלים, צפון"
               value={location}
               onChange={e => setLocation(e.target.value)}
             />
@@ -122,10 +122,10 @@ export default function VendorsPage() {
 
           <div className="form-group">
             <label className="form-label">מחיר מקסימלי (₪)</label>
-            <input 
-              type="number" 
-              className="form-input" 
-              placeholder="לדוגמה: 5000" 
+            <input
+              type="number"
+              className="form-input"
+              placeholder="לדוגמה: 5000"
               value={maxPrice}
               onChange={e => setMaxPrice(e.target.value)}
               min="0"
@@ -163,9 +163,9 @@ export default function VendorsPage() {
               <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
                 מוצגים <b>{vendors.length}</b> מתוך <b>{totalCount}</b> ספקים בקטלוג
               </p>
-              <button 
-                onClick={handleLoadMore} 
-                className="btn btn-secondary" 
+              <button
+                onClick={handleLoadMore}
+                className="btn btn-secondary"
                 disabled={loadingMore}
                 style={{ padding: '12px 28px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}
               >

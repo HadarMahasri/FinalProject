@@ -19,7 +19,7 @@ export default function VendorDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user, token } = useAuth();
-  const { updateVendorInCache, addBookingToCache } = useData();
+  const { updateVendorInCache } = useData();
   const { openChatWithUser } = useSocket();
 
   const [vendor, setVendor] = useState(null);
@@ -101,7 +101,6 @@ export default function VendorDetailsPage() {
       alert(res.message || 'בקשת התיאום נשלחה לספק בהצלחה!');
       setShowBookingModal(false);
       setBookingNotes('');
-      if (addBookingToCache) addBookingToCache();
     } catch (err) {
       alert('שגיאה בשליחת הבקשה: ' + err.message);
     } finally {
@@ -111,6 +110,7 @@ export default function VendorDetailsPage() {
 
   const handleAddReview = async (e) => {
     e.preventDefault();
+
     if (!isUserLoggedIn) {
       alert('נא להתחבר כדי להוסיף ביקורת.');
       navigate('/login');
@@ -118,35 +118,52 @@ export default function VendorDetailsPage() {
     }
 
     setSubmittingReview(true);
+
     try {
       const res = await api.createReview({
         vendor_id: Number(vendor.id),
         rating: Number(rating),
         comment
       });
-      alert('תודה על חוות הדעת! הביקורת נוספה בהצלחה.');
-      setComment('');
-      
-      // Update local state directly - ZERO extra GET network calls!
-      if (res && res.review) {
-        const newReviews = [res.review, ...(vendor?.reviews || [])];
-        const newCount = newReviews.length;
-        const newAvg = (newReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / newCount).toFixed(1);
 
-        setVendor(prev => ({
-          ...prev,
-          reviews: newReviews,
+      const newReview = {
+        id: res.id,
+        rating: Number(rating),
+        comment,
+        customer_name: user?.name || 'לקוח מאומת'
+      };
+
+      const newReviews = [
+        newReview,
+        ...(vendor?.reviews || [])
+      ];
+
+      const newCount = newReviews.length;
+
+      const newAvg = (
+        newReviews.reduce(
+          (sum, r) => sum + Number(r.rating || 0),
+          0
+        ) / newCount
+      ).toFixed(2);
+
+      setVendor(prev => ({
+        ...prev,
+        reviews: newReviews,
+        review_count: newCount,
+        rating_avg: Number(newAvg)
+      }));
+
+      if (updateVendorInCache) {
+        updateVendorInCache(vendor.id, {
           review_count: newCount,
           rating_avg: Number(newAvg)
-        }));
-
-        if (updateVendorInCache) {
-          updateVendorInCache(vendor.id, {
-            review_count: newCount,
-            rating_avg: Number(newAvg)
-          });
-        }
+        });
       }
+
+      setComment('');
+      alert('תודה על חוות הדעת! הביקורת נוספה בהצלחה.');
+
     } catch (err) {
       alert('שגיאה בהוספת הביקורת: ' + err.message);
     } finally {
@@ -184,7 +201,7 @@ export default function VendorDetailsPage() {
 
   return (
     <div className="container" style={{ padding: '40px 20px' }}>
-      
+
       {/* Cover & Hero Info */}
       <div className="glass-card" style={{ overflow: 'hidden', marginBottom: '40px' }}>
         <div style={{ height: '320px', width: '100%', position: 'relative' }}>
@@ -233,10 +250,10 @@ export default function VendorDetailsPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' }}>
-        
+
         {/* Main Content & Gallery */}
         <div>
-          
+
           {/* Business Description */}
           <div className="glass-card" style={{ padding: '30px', marginBottom: '30px' }}>
             <h2 style={{ fontSize: '1.4rem', marginBottom: '16px' }}>על העסק והשירות</h2>
@@ -297,7 +314,7 @@ export default function VendorDetailsPage() {
             {isUserLoggedIn && isCustomerAccount && (
               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px border var(--color-border)' }}>
                 <h3 style={{ fontSize: '1.1rem', marginBottom: '14px' }}>הוסף חוות דעת ודירוג</h3>
-                
+
                 <form onSubmit={handleAddReview} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div className="form-group">
                     <label className="form-label">דירוג באירוע (1 עד 5 כוכבים)</label>
@@ -312,13 +329,13 @@ export default function VendorDetailsPage() {
 
                   <div className="form-group">
                     <label className="form-label">תוכן חוות הדעת שלך</label>
-                    <textarea 
-                      className="form-textarea" 
-                      rows="3" 
-                      value={comment} 
-                      onChange={e => setComment(e.target.value)} 
-                      placeholder="ספר על השירות, העמידה בזמנים והחוויה מהאירוע שלך..." 
-                      required 
+                    <textarea
+                      className="form-textarea"
+                      rows="3"
+                      value={comment}
+                      onChange={e => setComment(e.target.value)}
+                      placeholder="ספר על השירות, העמידה בזמנים והחוויה מהאירוע שלך..."
+                      required
                     />
                   </div>
 
@@ -336,7 +353,7 @@ export default function VendorDetailsPage() {
         <div>
           <div className="glass-card" style={{ padding: '24px', position: 'sticky', top: '90px' }}>
             <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>סיכום פרטי ספק</h3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>דירוג ממוצע:</span>
@@ -385,7 +402,7 @@ export default function VendorDetailsPage() {
         <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
           <div className="modal-content animate-fade-in" onClick={e => e.stopPropagation()}>
             <h2 style={{ fontSize: '1.3rem', marginBottom: '16px' }} className="gradient-text">שליחת בקשת תיאום ל-{vendor.business_name}</h2>
-            
+
             {customerEvents.length === 0 ? (
               <div>
                 <p style={{ color: 'var(--color-text-muted)', marginBottom: '16px' }}>עדיין לא הגדרת אירועים בחשבונך. צרי אירוע חדש בדשבורד כדי לשלוח בקשות תיאום לספקים.</p>
@@ -424,12 +441,12 @@ export default function VendorDetailsPage() {
 
                 <div className="form-group">
                   <label className="form-label">הערות / בקשות מיוחדות לספק</label>
-                  <textarea 
-                    className="form-textarea" 
-                    rows="3" 
-                    value={bookingNotes} 
-                    onChange={e => setBookingNotes(e.target.value)} 
-                    placeholder="פרטי האירוע, סגנון מבוקש, שעות פעילות מוערכות..." 
+                  <textarea
+                    className="form-textarea"
+                    rows="3"
+                    value={bookingNotes}
+                    onChange={e => setBookingNotes(e.target.value)}
+                    placeholder="פרטי האירוע, סגנון מבוקש, שעות פעילות מוערכות..."
                   />
                 </div>
 

@@ -9,7 +9,7 @@ import { Store, Upload, Check, X, Calendar, Phone, Mail, FileText, Image as Imag
 const BOOKINGS_PER_PAGE = 5;
 
 export default function VendorDashboard() {
-  const { user } = useAuth();
+  const { user, vendorProfile: authVendorProfile } = useAuth();
   const { getVendorBookingsCached, updateVendorInCache, updateBookingStatusInCache } = useData();
   const { openChatWithUser } = useSocket();
 
@@ -41,17 +41,17 @@ export default function VendorDashboard() {
     setLoading(true);
     setBookingsPage(1);
     try {
-      const [profileRes, bookingsRes] = await Promise.all([
-        api.getProfile(),
-        getVendorBookingsCached({ limit: BOOKINGS_PER_PAGE, page: 1 }, force)
-      ]);
-      setVendorProfile(profileRes.vendorProfile);
-      setPhone(profileRes.user?.phone || profileRes.vendorProfile?.phone || '');
+      const bookingsRes = await getVendorBookingsCached(
+        { limit: BOOKINGS_PER_PAGE, page: 1 },
+        force
+      );
 
-      if (profileRes.vendorProfile) {
-        setDescription(profileRes.vendorProfile.description || '');
-        setStartingPrice(profileRes.vendorProfile.starting_price || '');
-        setLocation(profileRes.vendorProfile.location || '');
+      if (authVendorProfile) {
+        setVendorProfile(authVendorProfile);
+        setPhone(user?.phone || authVendorProfile.phone || '');
+        setDescription(authVendorProfile.description || '');
+        setStartingPrice(authVendorProfile.starting_price || '');
+        setLocation(authVendorProfile.location || '');
       }
 
       if (bookingsRes && bookingsRes.bookings) {
@@ -71,8 +71,10 @@ export default function VendorDashboard() {
   };
 
   useEffect(() => {
-    loadVendorData();
-  }, []);
+    if (authVendorProfile) {
+      loadVendorData();
+    }
+  }, [authVendorProfile]);
 
   const handleLoadMoreBookings = async () => {
     const nextPage = bookingsPage + 1;
@@ -175,7 +177,7 @@ export default function VendorDashboard() {
 
   return (
     <div className="container" style={{ padding: '40px 20px' }}>
-      
+
       {/* Header Banner */}
       <div className="glass-card" style={{ padding: '32px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div>
@@ -192,23 +194,23 @@ export default function VendorDashboard() {
       </div>
 
       {/* Segmented Navigation Tabs */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '8px', 
-        marginBottom: '32px', 
-        background: 'rgba(15, 23, 42, 0.8)', 
-        padding: '6px', 
-        borderRadius: '16px', 
+      <div style={{
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '32px',
+        background: 'rgba(15, 23, 42, 0.8)',
+        padding: '6px',
+        borderRadius: '16px',
         border: '1px solid var(--color-border)',
         overflowX: 'auto'
       }}>
-        <button 
-          onClick={() => setActiveTab('bookings')} 
-          style={{ 
-            flex: 1, 
+        <button
+          onClick={() => setActiveTab('bookings')}
+          style={{
+            flex: 1,
             minWidth: '160px',
-            padding: '12px 16px', 
-            borderRadius: '12px', 
+            padding: '12px 16px',
+            borderRadius: '12px',
             border: 'none',
             background: activeTab === 'bookings' ? 'linear-gradient(135deg, var(--color-primary), #4338ca)' : 'transparent',
             color: activeTab === 'bookings' ? '#fff' : 'var(--color-text-muted)',
@@ -225,13 +227,13 @@ export default function VendorDashboard() {
           <FileText size={18} /> פניות מספקים ({bookingsTotalCount || bookings.length})
         </button>
 
-        <button 
-          onClick={() => setActiveTab('profile')} 
-          style={{ 
-            flex: 1, 
+        <button
+          onClick={() => setActiveTab('profile')}
+          style={{
+            flex: 1,
             minWidth: '160px',
-            padding: '12px 16px', 
-            borderRadius: '12px', 
+            padding: '12px 16px',
+            borderRadius: '12px',
             border: 'none',
             background: activeTab === 'profile' ? 'linear-gradient(135deg, var(--color-primary), #4338ca)' : 'transparent',
             color: activeTab === 'profile' ? '#fff' : 'var(--color-text-muted)',
@@ -248,13 +250,13 @@ export default function VendorDashboard() {
           <Store size={18} /> ניהול פרופיל עסק וגלרייה
         </button>
 
-        <button 
-          onClick={() => setActiveTab('analytics')} 
-          style={{ 
-            flex: 1, 
+        <button
+          onClick={() => setActiveTab('analytics')}
+          style={{
+            flex: 1,
             minWidth: '160px',
-            padding: '12px 16px', 
-            borderRadius: '12px', 
+            padding: '12px 16px',
+            borderRadius: '12px',
             border: 'none',
             background: activeTab === 'analytics' ? 'linear-gradient(135deg, var(--color-primary), #4338ca)' : 'transparent',
             color: activeTab === 'analytics' ? '#fff' : 'var(--color-text-muted)',
@@ -345,9 +347,9 @@ export default function VendorDashboard() {
                     <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
                       מוצגות <b>{bookings.length}</b> מתוך <b>{bookingsTotalCount}</b> פניות
                     </p>
-                    <button 
-                      onClick={handleLoadMoreBookings} 
-                      className="btn btn-secondary" 
+                    <button
+                      onClick={handleLoadMoreBookings}
+                      className="btn btn-secondary"
                       disabled={loadingMoreBookings}
                       style={{ padding: '10px 24px', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
@@ -364,7 +366,7 @@ export default function VendorDashboard() {
       {/* TAB 2: PROFILE & MEDIA GALLERY MANAGEMENT */}
       {activeTab === 'profile' && (
         <div className="animate-fade-in" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-          
+
           {/* Edit Profile Form */}
           <div className="glass-card" style={{ padding: '28px' }}>
             <h2 style={{ fontSize: '1.3rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -415,12 +417,12 @@ export default function VendorDashboard() {
             <form onSubmit={handleFileUpload} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
                 <label className="form-label">בחר תמונה להעלאה (JPG / PNG / WEBP)</label>
-                <input 
-                  type="file" 
-                  className="form-input" 
-                  accept="image/*" 
-                  onChange={e => setSelectedFile(e.target.files[0])} 
-                  required 
+                <input
+                  type="file"
+                  className="form-input"
+                  accept="image/*"
+                  onChange={e => setSelectedFile(e.target.files[0])}
+                  required
                 />
               </div>
 
@@ -432,10 +434,10 @@ export default function VendorDashboard() {
             {vendorProfile?.cover_image && (
               <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--color-border)' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '8px' }}>תמונת שער נוכחית:</span>
-                <img 
-                  src={vendorProfile.cover_image} 
-                  alt="Cover" 
-                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', border: '1px solid var(--color-border)' }} 
+                <img
+                  src={vendorProfile.cover_image}
+                  alt="Cover"
+                  style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px', border: '1px solid var(--color-border)' }}
                 />
               </div>
             )}
