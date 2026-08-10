@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import VendorCard from '../components/VendorCard';
 import { 
@@ -9,6 +10,7 @@ import {
 
 export default function HomePage({ onOpenAIModal }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { getVendorsCached } = useData();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,9 +75,11 @@ export default function HomePage({ onOpenAIModal }) {
               <Search size={18} /> לצפייה בקטלוג הספקים
             </Link>
 
-            <button onClick={onOpenAIModal} className="btn btn-gold" style={{ padding: '14px 28px', fontSize: '1.05rem' }}>
-              <Sparkles size={18} /> תכנון תקציב וצ'ק-ליסט ב-AI
-            </button>
+            {user?.role !== 'vendor' && (
+              <button onClick={onOpenAIModal} className="btn btn-gold" style={{ padding: '14px 28px', fontSize: '1.05rem' }}>
+                <Sparkles size={18} /> תכנון תקציב וצ'ק-ליסט ב-AI
+              </button>
+            )}
           </div>
 
         </div>
