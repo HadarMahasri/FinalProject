@@ -224,6 +224,20 @@ class EventModel {
       return null;
     }
   }
+
+  // בודק האם לקוח כבר שלח פנייה לספק זה עבור האירוע הספציפי הזה (מניעת פניות כפולות לאותו ספק)
+  static async getExistingBooking(eventId, vendorId) {
+    try {
+      const [rows] = await db.query(
+        'SELECT id, status FROM bookings WHERE event_id = ? AND vendor_id = ?',
+        [eventId, vendorId]
+      );
+      return rows[0] || null;
+    } catch (err) {
+      console.error('Error in EventModel.getExistingBooking:', err.message);
+      return null;
+    }
+  }
 }
 
 module.exports = EventModel;

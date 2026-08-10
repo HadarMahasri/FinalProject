@@ -119,6 +119,12 @@ async function createBooking(req, res) {
       return res.status(404).json({ message: 'ספק לא נמצא.' });
     }
 
+    // מניעת פניות כפולות: בדיקה האם הלקוח כבר שלח פנייה לספק זה עבור אירוע זה
+    const existingBooking = await EventModel.getExistingBooking(event_id, vendor_id);
+    if (existingBooking) {
+      return res.status(400).json({ message: 'כבר שלחת פנייה לספק זה עבור האירוע שלך!' });
+    }
+
     await EventModel.createBooking({ event_id, vendor_id, notes, agreed_price: vendor.starting_price });
     res.status(201).json({ message: 'בקשת ההזמנה נשלחה לספק בהצלחה!' });
   } catch (error) {
