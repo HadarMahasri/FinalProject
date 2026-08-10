@@ -67,9 +67,9 @@ export default function VendorCard({ vendor }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
             <h3 style={{ fontSize: '1.2rem', color: 'var(--color-text-main)' }}>{vendor.business_name}</h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 8px', borderRadius: '12px' }}>
-              <Star size={14} color="#f59e0b" fill="#f59e0b" />
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(217, 119, 6, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+              <Star size={14} color="var(--color-gold)" fill="var(--color-gold)" />
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-gold)' }}>
                 {vendor.review_count > 0 ? Number(vendor.rating_avg).toFixed(1) : 'חדש'}
               </span>
             </div>

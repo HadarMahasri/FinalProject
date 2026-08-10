@@ -17,29 +17,33 @@ export default function Navbar({ onOpenAIModal }) {
   return (
     <nav style={{
       position: 'sticky',
-      top: 0,
+      top: '16px',
+      margin: '0 auto 24px auto',
+      maxWidth: '1200px',
+      width: 'calc(100% - 40px)',
       zIndex: 900,
-      background: 'rgba(11, 15, 25, 0.85)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      borderBottom: '1px solid var(--color-border)',
-      padding: '16px 0'
+      background: 'rgba(255, 255, 255, 0.8)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      border: '1px solid var(--color-border)',
+      borderRadius: '24px',
+      padding: '12px 24px',
+      boxShadow: '0 8px 30px rgba(15, 23, 42, 0.04)'
     }}>
-      <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
         
         {/* Brand Logo */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
           <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
             background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: 'var(--shadow-glow)'
+            justifyContent: 'center'
           }}>
-            <Sparkles size={24} color="#ffffff" />
+            <Sparkles size={22} color="#ffffff" />
           </div>
           <div>
             <span style={{ fontSize: '1.4rem', fontWeight: 800, letterSpacing: '-0.5px' }} className="gradient-text">
@@ -95,7 +99,7 @@ export default function Navbar({ onOpenAIModal }) {
                 </Link>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: 'rgba(0,0,0,0.04)', borderRadius: '20px' }}>
                 <User size={16} color="var(--color-primary)" />
                 <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{user.name}</span>
                 <button 

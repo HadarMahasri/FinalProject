@@ -73,7 +73,7 @@ export default function RegisterPage() {
       <div className="glass-card animate-fade-in" style={{ maxWidth: '580px', width: '100%', padding: '40px' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ display: 'inline-flex', padding: '10px', background: 'rgba(236, 72, 153, 0.2)', borderRadius: '14px', marginBottom: '12px' }}>
+          <div style={{ display: 'inline-flex', padding: '10px', background: 'rgba(236, 72, 153, 0.08)', borderRadius: '14px', marginBottom: '12px' }}>
             <Sparkles size={28} color="var(--color-secondary)" />
           </div>
           <h2 style={{ fontSize: '1.6rem', marginBottom: '6px' }}>הרשמה למערכת EventHub</h2>
@@ -89,7 +89,7 @@ export default function RegisterPage() {
               padding: '14px',
               borderRadius: 'var(--radius-sm)',
               border: role === 'customer' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-              background: role === 'customer' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.03)',
+              background: role === 'customer' ? 'rgba(99, 102, 241, 0.08)' : '#ffffff',
               color: 'var(--color-text-main)',
               fontWeight: 700,
               cursor: 'pointer',
@@ -110,7 +110,7 @@ export default function RegisterPage() {
               padding: '14px',
               borderRadius: 'var(--radius-sm)',
               border: role === 'vendor' ? '2px solid var(--color-secondary)' : '1px solid var(--color-border)',
-              background: role === 'vendor' ? 'rgba(236, 72, 153, 0.15)' : 'rgba(255,255,255,0.03)',
+              background: role === 'vendor' ? 'rgba(236, 72, 153, 0.08)' : '#ffffff',
               color: 'var(--color-text-main)',
               fontWeight: 700,
               cursor: 'pointer',
@@ -126,7 +126,7 @@ export default function RegisterPage() {
         </div>
 
         {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid var(--color-danger)', color: '#f87171', padding: '12px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+          <div style={{ background: 'rgba(220, 38, 38, 0.08)', border: '1px solid var(--color-danger)', color: 'var(--color-danger)', padding: '12px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
             <AlertCircle size={18} />
             <span>{error}</span>
           </div>

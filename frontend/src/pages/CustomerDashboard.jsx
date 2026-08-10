@@ -309,7 +309,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
       <div className="glass-card" style={{ padding: '32px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <span className="badge badge-primary" style={{ marginBottom: '8px' }}>אזור אישי - לקוח</span>
-          <h1 style={{ fontSize: '2rem' }}>שלום, {user?.name || 'חוגג/ת'}! 👋</h1>
+          <h1 style={{ fontSize: '2rem' }}>שלום, {user?.name || 'חוגג/ת'}!</h1>
           <p style={{ color: 'var(--color-text-muted)', marginTop: '4px' }}>ניהול נוח ומפולח של האירועים, הפניות, התקציב והמשימות שלך</p>
         </div>
 
@@ -328,7 +328,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
         display: 'flex', 
         gap: '8px', 
         marginBottom: '32px', 
-        background: 'rgba(15, 23, 42, 0.8)', 
+        background: '#f1f5f9', 
         padding: '6px', 
         borderRadius: '16px', 
         border: '1px solid var(--color-border)',
@@ -479,14 +479,14 @@ export default function CustomerDashboard({ onOpenAIModal }) {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
-                      <span>📅 תאריך: <b>{new Date(ev.event_date).toLocaleDateString('he-IL')}</b></span>
-                      <span>📍 אזור: <b>{ev.location}</b></span>
-                      <span>👥 כמות אורחים: <b>{ev.guest_count || 0}</b></span>
+                      <span>תאריך: <b>{new Date(ev.event_date).toLocaleDateString('he-IL')}</b></span>
+                      <span>אזור: <b>{ev.location}</b></span>
+                      <span>כמות אורחים: <b>{ev.guest_count || 0}</b></span>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--color-border)' }}>
                       <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>תקציב יעד:</span>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fbbf24' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-gold)' }}>
                         ₪{Number(ev.budget || 0).toLocaleString()}
                       </span>
                     </div>
@@ -576,7 +576,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <div style={{ textAlign: 'left' }}>
                       <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>מחיר מוסכם</span>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fbbf24' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-gold)' }}>
                         ₪{Number(b.agreed_price || 0).toLocaleString()}
                       </span>
                     </div>
@@ -604,11 +604,11 @@ export default function CustomerDashboard({ onOpenAIModal }) {
               <p style={{ color: 'var(--color-text-muted)' }}>פתח אירוע חדש כדי להתחיל לתכנן את התקציב שלך!</p>
             </div>
           ) : (
-            <div className="glass-card" style={{ padding: '32px', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8))' }}>
+            <div className="glass-card" style={{ padding: '32px', background: 'linear-gradient(135deg, #f8fafc, #ffffff)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
                 <div>
                   <h2 style={{ fontSize: '1.4rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <PieChart size={22} color="#fbbf24" /> מחשבון תקציב ומעקב הוצאות
+                    <PieChart size={22} color="var(--color-gold)" /> מחשבון תקציב ומעקב הוצאות
                   </h2>
                   <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
                     מציג נתוני תקציב עבור האירוע: <b>{selectedEvent?.title}</b>
@@ -628,19 +628,19 @@ export default function CustomerDashboard({ onOpenAIModal }) {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '20px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
+                <div style={{ background: '#ffffff', border: '1px solid var(--color-border)', padding: '20px', borderRadius: '14px' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>תקציב יעד כולל</span>
-                  <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#60a5fa' }}>₪{targetBudget.toLocaleString()}</span>
+                  <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#0284c7' }}>₪{targetBudget.toLocaleString()}</span>
                 </div>
 
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '20px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
+                <div style={{ background: '#ffffff', border: '1px solid var(--color-border)', padding: '20px', borderRadius: '14px' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>סך הצעות מחיר מוסכמות</span>
-                  <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fbbf24' }}>₪{totalAgreedSpent.toLocaleString()}</span>
+                  <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-gold)' }}>₪{totalAgreedSpent.toLocaleString()}</span>
                 </div>
 
-                <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '20px', borderRadius: '14px', border: '1px solid var(--color-border)' }}>
+                <div style={{ background: '#ffffff', border: '1px solid var(--color-border)', padding: '20px', borderRadius: '14px' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>תקציב נותר מתוך היעד</span>
-                  <span style={{ fontSize: '1.6rem', fontWeight: 800, color: remainingBudget >= 0 ? '#34d399' : '#f87171' }}>
+                  <span style={{ fontSize: '1.6rem', fontWeight: 800, color: remainingBudget >= 0 ? 'var(--color-success)' : 'var(--color-danger)' }}>
                     ₪{remainingBudget.toLocaleString()}
                   </span>
                 </div>
@@ -653,7 +653,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
                   <b>{budgetPercentage}% ניצול ({totalAgreedSpent.toLocaleString()} ₪ מתוך {targetBudget.toLocaleString()} ₪)</b>
                 </div>
 
-                <div style={{ width: '100%', height: '14px', background: 'rgba(255,255,255,0.1)', borderRadius: '7px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '14px', background: '#e2e8f0', borderRadius: '7px', overflow: 'hidden' }}>
                   <div 
                     style={{ 
                       width: `${budgetPercentage}%`, 
@@ -704,7 +704,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
 
             {/* Task Progress Bar */}
             {tasks.length > 0 && (
-              <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', overflow: 'hidden', marginBottom: '24px' }}>
+              <div style={{ width: '100%', height: '10px', background: '#e2e8f0', borderRadius: '5px', overflow: 'hidden', marginBottom: '24px' }}>
                 <div style={{ width: `${tasksPercentage}%`, height: '100%', background: 'linear-gradient(90deg, #10b981, #059669)', transition: 'width 0.4s ease' }} />
               </div>
             )}
@@ -738,7 +738,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
                     style={{ 
                       padding: '14px 18px', 
                       borderRadius: '12px', 
-                      background: t.is_completed ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                      background: t.is_completed ? 'rgba(5, 150, 105, 0.08)' : '#ffffff',
                       border: '1px solid var(--color-border)',
                       display: 'flex',
                       alignItems: 'center',
@@ -751,7 +751,7 @@ export default function CustomerDashboard({ onOpenAIModal }) {
                       style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', flex: 1 }}
                     >
                       {t.is_completed ? (
-                        <CheckSquare size={22} color="#34d399" />
+                        <CheckSquare size={22} color="var(--color-success)" />
                       ) : (
                         <Square size={22} color="var(--color-text-muted)" />
                       )}

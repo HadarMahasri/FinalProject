@@ -55,7 +55,7 @@ export default function HomePage({ onOpenAIModal }) {
         position: 'relative',
         padding: '90px 0 70px 0',
         textAlign: 'center',
-        background: 'radial-gradient(circle at 50% 20%, rgba(79, 70, 229, 0.18) 0%, transparent 60%)'
+        background: 'radial-gradient(circle at 50% 20%, rgba(79, 70, 229, 0.08) 0%, transparent 70%)'
       }}>
         <div className="container">
           
@@ -88,7 +88,7 @@ export default function HomePage({ onOpenAIModal }) {
             מה אתם מחפשים לאירוע שלכם?
           </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
             {categories.map(cat => {
               const Icon = cat.icon;
               return (
@@ -97,20 +97,20 @@ export default function HomePage({ onOpenAIModal }) {
                   to={`/vendors?category=${cat.key}`}
                   className="glass-card"
                   style={{
-                    padding: '24px 16px',
-                    textAlign: 'center',
+                    padding: '18px 20px',
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '12px',
-                    textDecoration: 'none',
-                    transition: 'transform 0.2s ease, border-color 0.2s ease'
+                    gap: '16px',
+                    textDecoration: 'none'
                   }}
                 >
-                  <div style={{ width: '54px', height: '54px', borderRadius: '16px', background: `${cat.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Icon size={26} color={cat.color} />
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: `${cat.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={22} color={cat.color} />
                   </div>
-                  <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text-main)' }}>{cat.name}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-main)', display: 'block' }}>{cat.name}</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-subtle)', display: 'block', marginTop: '2px' }}>לחצו לצפייה בספקים</span>
+                  </div>
                 </Link>
               );
             })}
@@ -146,7 +146,7 @@ export default function HomePage({ onOpenAIModal }) {
       </section>
 
       {/* How it Works Section */}
-      <section style={{ padding: '70px 0', background: 'rgba(15, 23, 42, 0.6)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
+      <section style={{ padding: '70px 0', background: 'var(--color-surface-hover)', borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)' }}>
         <div className="container">
           <h2 style={{ fontSize: '1.6rem', textAlign: 'center', marginBottom: '10px' }}>
             איך EventHub עוזר לכם לסגור אירוע מושלם?
@@ -157,7 +157,7 @@ export default function HomePage({ onOpenAIModal }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
             <div className="glass-card" style={{ padding: '28px', textAlign: 'center' }}>
-              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(79, 70, 229, 0.2)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(79, 70, 229, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
                 1
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>מוצאים ספקים מומלצים</h3>
@@ -167,7 +167,7 @@ export default function HomePage({ onOpenAIModal }) {
             </div>
 
             <div className="glass-card" style={{ padding: '28px', textAlign: 'center' }}>
-              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(217, 119, 6, 0.1)', color: 'var(--color-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
                 2
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>מדברים בלייב בצ'אט</h3>
@@ -177,7 +177,7 @@ export default function HomePage({ onOpenAIModal }) {
             </div>
 
             <div className="glass-card" style={{ padding: '28px', textAlign: 'center' }}>
-              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
+              <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(5, 150, 105, 0.1)', color: 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 800, margin: '0 auto 16px auto' }}>
                 3
               </div>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '8px' }}>מנהלים תקציב ומשימות</h3>

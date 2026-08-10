@@ -32,7 +32,7 @@ export default function LoginPage() {
       <div className="glass-card animate-fade-in" style={{ maxWidth: '440px', width: '100%', padding: '40px' }}>
         
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ display: 'inline-flex', padding: '10px', background: 'rgba(99, 102, 241, 0.2)', borderRadius: '14px', marginBottom: '12px' }}>
+          <div style={{ display: 'inline-flex', padding: '10px', background: 'rgba(79, 70, 229, 0.08)', borderRadius: '14px', marginBottom: '12px' }}>
             <Sparkles size={28} color="var(--color-primary)" />
           </div>
           <h2 style={{ fontSize: '1.6rem', marginBottom: '6px' }}>התחברות למערכת EventHub</h2>
@@ -40,7 +40,7 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid var(--color-danger)', color: '#f87171', padding: '12px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+          <div style={{ background: 'rgba(220, 38, 38, 0.08)', border: '1px solid var(--color-danger)', color: 'var(--color-danger)', padding: '12px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
             <AlertCircle size={18} />
             <span>{error}</span>
           </div>
@@ -82,7 +82,7 @@ export default function LoginPage() {
         </div>
 
         <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-border)', fontSize: '0.8rem', color: 'var(--color-text-subtle)', textAlign: 'center' }}>
-          💡 לבדיקה מהירה: אימייל: <b>michal@gmail.com</b> או <b>roey@studioshahar.co.il</b> (סיסמה: <b>password123</b>)
+          מידע לבדיקה מהירה: אימייל: <b>michal@gmail.com</b> או <b>roey@studioshahar.co.il</b> (סיסמה: <b>password123</b>)
         </div>
 
       </div>

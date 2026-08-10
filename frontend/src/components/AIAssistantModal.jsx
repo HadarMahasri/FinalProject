@@ -99,14 +99,14 @@ export default function AIAssistantModal({ isOpen, onClose }) {
             disabled={loading}
             style={{ gridColumn: 'span 2', width: '100%', marginTop: '8px' }}
           >
-            {loading ? 'מנתח נתונים ומייצר תוכנית...' : '✨ הופק תוכנית תקציב עם AI'}
+            {loading ? 'מנתח נתונים ומייצר תוכנית...' : 'הפקת תוכנית תקציב עם AI'}
           </button>
         </form>
 
         {/* AI Output Results */}
         {aiResult && (
-          <div style={{ background: 'rgba(15, 23, 42, 0.7)', borderRadius: 'var(--radius-md)', padding: '20px', border: '1px solid var(--color-border-accent)' }}>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '14px', color: '#fbbf24' }}>
+          <div style={{ background: '#f8fafc', borderRadius: 'var(--radius-md)', padding: '20px', border: '1px solid var(--color-border)' }}>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '14px', color: 'var(--color-gold)' }}>
               {aiResult.summary}
             </h3>
 
@@ -117,7 +117,7 @@ export default function AIAssistantModal({ isOpen, onClose }) {
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {aiResult.recommendedBreakdown.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.04)', padding: '8px 12px', borderRadius: '8px' }}>
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px' }}>
                     <span style={{ fontSize: '0.9rem' }}>{item.category}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span className="badge badge-primary">{item.percentage}</span>

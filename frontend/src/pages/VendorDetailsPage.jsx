@@ -209,14 +209,14 @@ export default function VendorDetailsPage() {
           <div style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(to top, rgba(11, 15, 25, 0.95) 0%, transparent 60%)'
+            background: 'linear-gradient(to top, rgba(248, 250, 252, 0.98) 0%, transparent 80%)'
           }} />
           <div style={{ position: 'absolute', bottom: '24px', right: '24px', left: '24px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <span className="badge badge-primary" style={{ marginBottom: '8px' }}>
                 {categoryLabels[vendor.category] || vendor.category}
               </span>
-              <h1 style={{ fontSize: '2.2rem', color: '#fff' }}>{vendor.business_name}</h1>
+              <h1 style={{ fontSize: '2.2rem', color: 'var(--color-text-main)' }}>{vendor.business_name}</h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--color-text-muted)', marginTop: '6px' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={16} color="var(--color-primary)" /> {vendor.location}</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={16} color="var(--color-success)" /> {vendor.phone || 'טרם עודכן'}</span>
@@ -224,13 +224,13 @@ export default function VendorDetailsPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ textAlign: 'left', background: 'rgba(255,255,255,0.08)', padding: '10px 18px', borderRadius: '12px', backdropFilter: 'blur(10px)' }}>
+              <div style={{ textAlign: 'left', background: '#f1f5f9', border: '1px solid var(--color-border)', padding: '10px 18px', borderRadius: '12px' }}>
                 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>מחיר פתיחה מוערך</span>
-                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fbbf24' }}>₪{Number(vendor.starting_price).toLocaleString()}</span>
+                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-gold)' }}>₪{Number(vendor.starting_price).toLocaleString()}</span>
               </div>
 
               {isVendorAccount ? (
-                <div style={{ background: 'rgba(124, 58, 237, 0.2)', padding: '10px 16px', borderRadius: '12px', border: '1px solid var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                <div style={{ background: 'rgba(79, 70, 229, 0.08)', padding: '10px 16px', borderRadius: '12px', border: '1px solid var(--color-primary)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
                   <Eye size={18} color="var(--color-primary)" />
                   <span>מצב צפייה כספק</span>
                 </div>
@@ -287,7 +287,7 @@ export default function VendorDetailsPage() {
           {/* Customer Reviews Section */}
           <div className="glass-card" style={{ padding: '30px' }}>
             <h2 style={{ fontSize: '1.4rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MessageSquare size={20} color="#fbbf24" /> חוות דעת של לקוחות ({vendor.reviews?.length || 0})
+              <MessageSquare size={20} color="var(--color-gold)" /> חוות דעת של לקוחות ({vendor.reviews?.length || 0})
             </h2>
 
             {(!vendor.reviews || vendor.reviews.length === 0) ? (
@@ -295,12 +295,12 @@ export default function VendorDetailsPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
                 {vendor.reviews.map(r => (
-                  <div key={r.id} style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                  <div key={r.id} style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                       <span style={{ fontWeight: 700, color: 'var(--color-text-main)' }}>{r.customer_name || 'לקוח מאומת'}</span>
                       <div style={{ display: 'flex', gap: '2px' }}>
                         {[...Array(5)].map((_, i) => (
-                          <Star key={i} size={14} color={i < r.rating ? '#fbbf24' : '#475569'} fill={i < r.rating ? '#fbbf24' : 'none'} />
+                          <Star key={i} size={14} color={i < r.rating ? 'var(--color-gold)' : '#cbd5e1'} fill={i < r.rating ? 'var(--color-gold)' : 'none'} />
                         ))}
                       </div>
                     </div>
@@ -312,18 +312,18 @@ export default function VendorDetailsPage() {
 
             {/* Add Review Form for Customers */}
             {isUserLoggedIn && isCustomerAccount && (
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '12px', border: '1px border var(--color-border)' }}>
+              <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                 <h3 style={{ fontSize: '1.1rem', marginBottom: '14px' }}>הוסף חוות דעת ודירוג</h3>
 
                 <form onSubmit={handleAddReview} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div className="form-group">
                     <label className="form-label">דירוג באירוע (1 עד 5 כוכבים)</label>
                     <select className="form-select" value={rating} onChange={e => setRating(e.target.value)}>
-                      <option value={5}>⭐⭐⭐⭐⭐ (5 - מעולה ביותר)</option>
-                      <option value={4}>⭐⭐⭐⭐ (4 - טוב מאוד)</option>
-                      <option value={3}>⭐⭐⭐ (3 - בינוני)</option>
-                      <option value={2}>⭐⭐ (2 - לא מספק)</option>
-                      <option value={1}>⭐ (1 - גרוע)</option>
+                      <option value={5}>5 (מעולה ביותר)</option>
+                      <option value={4}>4 (טוב מאוד)</option>
+                      <option value={3}>3 (בינוני)</option>
+                      <option value={2}>2 (לא מספק)</option>
+                      <option value={1}>1 (גרוע)</option>
                     </select>
                   </div>
 
@@ -357,8 +357,8 @@ export default function VendorDetailsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>דירוג ממוצע:</span>
-                <span style={{ fontWeight: 700, color: '#fbbf24' }}>
-                  {vendor.review_count > 0 ? `${Number(vendor.rating_avg).toFixed(1)} ⭐ (${vendor.review_count} מדרגים)` : 'טרם נכתבו ביקורות (0 מדרגים)'}
+                <span style={{ fontWeight: 700, color: 'var(--color-gold)' }}>
+                  {vendor.review_count > 0 ? `${Number(vendor.rating_avg).toFixed(1)} מתוך 5 (${vendor.review_count} מדרגים)` : 'טרם נכתבו ביקורות (0 מדרגים)'}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
@@ -367,11 +367,11 @@ export default function VendorDetailsPage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem' }}>
                 <span style={{ color: 'var(--color-text-muted)' }}>מחיר פתיחה:</span>
-                <span style={{ fontWeight: 800, color: '#fbbf24' }}>₪{Number(vendor.starting_price).toLocaleString()}</span>
+                <span style={{ fontWeight: 800, color: 'var(--color-gold)' }}>₪{Number(vendor.starting_price).toLocaleString()}</span>
               </div>
             </div>
 
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ background: '#f8fafc', border: '1px solid var(--color-border)', padding: '16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckCircle size={16} color="var(--color-success)" />
                 <span>מענה מהיר לבקשות תיאום</span>
@@ -424,17 +424,17 @@ export default function VendorDetailsPage() {
                   <div style={{
                     padding: '14px',
                     borderRadius: '10px',
-                    background: isOverBudget ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                    border: `1px solid ${isOverBudget ? '#ef4444' : '#10b981'}`,
+                    background: isOverBudget ? 'rgba(220, 38, 38, 0.08)' : 'rgba(5, 150, 105, 0.08)',
+                    border: `1px solid ${isOverBudget ? '#dc2626' : '#059669'}`,
                     fontSize: '0.88rem'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 700, color: isOverBudget ? '#f87171' : '#34d399' }}>
-                      {isOverBudget ? <AlertTriangle size={18} color="#ef4444" /> : <CheckCircle size={18} color="#10b981" />}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', fontWeight: 700, color: isOverBudget ? '#dc2626' : '#059669' }}>
+                      {isOverBudget ? <AlertTriangle size={18} color="#dc2626" /> : <CheckCircle size={18} color="#059669" />}
                       <span>{isOverBudget ? 'התראת חריגה מתקציב האירוע!' : 'הפנייה תואמת את מסגרת התקציב'}</span>
                     </div>
                     <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
                       תקציב מתוכנן לאירוע: <b>₪{eventBudget.toLocaleString()}</b> | מחיר פתיחה של הספק: <b>₪{vendorPrice.toLocaleString()}</b>
-                      {isOverBudget && <span style={{ display: 'block', marginTop: '4px', color: '#f87171', fontWeight: 600 }}>חריגה מוערכת: ₪{budgetDifference.toLocaleString()} (ניתן עדיין לשלוח פנייה ולבקש הצעת מחיר מותאמת אישית).</span>}
+                      {isOverBudget && <span style={{ display: 'block', marginTop: '4px', color: '#dc2626', fontWeight: 600 }}>חריגה מוערכת: ₪{budgetDifference.toLocaleString()} (ניתן עדיין לשלוח פנייה ולבקש הצעת מחיר מותאמת אישית).</span>}
                     </p>
                   </div>
                 )}

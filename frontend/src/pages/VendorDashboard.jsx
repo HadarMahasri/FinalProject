@@ -182,7 +182,7 @@ export default function VendorDashboard() {
       <div className="glass-card" style={{ padding: '32px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
         <div>
           <span className="badge badge-gold" style={{ marginBottom: '8px' }}>אזור אישי - ספק</span>
-          <h1 style={{ fontSize: '2rem' }}>{vendorProfile?.business_name || user?.name} 👋</h1>
+          <h1 style={{ fontSize: '2rem' }}>{vendorProfile?.business_name || user?.name}</h1>
           <p style={{ color: 'var(--color-text-muted)', marginTop: '4px' }}>ניהול נוח של פניות הלקוחות, צ'אט בלייב, עדכון פרטי העסק והעלאת תמונות לגלרייה</p>
         </div>
 
@@ -198,7 +198,7 @@ export default function VendorDashboard() {
         display: 'flex',
         gap: '8px',
         marginBottom: '32px',
-        background: 'rgba(15, 23, 42, 0.8)',
+        background: '#f1f5f9',
         padding: '6px',
         borderRadius: '16px',
         border: '1px solid var(--color-border)',
@@ -288,7 +288,7 @@ export default function VendorDashboard() {
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {bookings.map(b => (
-                    <div key={b.id} style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
+                    <div key={b.id} style={{ background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid var(--color-border)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
                         <div>
                           <span className="badge badge-primary" style={{ marginBottom: '4px' }}>{b.event_type}</span>
@@ -300,13 +300,13 @@ export default function VendorDashboard() {
 
                         <div style={{ textAlign: 'left' }}>
                           <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', display: 'block' }}>מחיר מוצע / מוסכם</span>
-                          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fbbf24' }}>
+                          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-gold)' }}>
                             ₪{Number(b.agreed_price || 0).toLocaleString()}
                           </span>
                         </div>
                       </div>
 
-                      <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+                      <div style={{ background: '#ffffff', border: '1px solid var(--color-border)', padding: '12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-muted)', marginBottom: '16px' }}>
                         תאריך אירוע: <b>{new Date(b.event_date).toLocaleDateString('he-IL')}</b> | אזור: <b>{b.location}</b> | אורחים: <b>{b.guest_count || 'לא צוין'}</b>
                         {b.notes && <p style={{ marginTop: '6px', color: 'var(--color-text-main)' }}>הערות הלקוח: "{b.notes}"</p>}
                       </div>
@@ -451,7 +451,7 @@ export default function VendorDashboard() {
         <div className="animate-fade-in">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
             <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: 'rgba(245, 158, 11, 0.15)', padding: '16px', borderRadius: '14px', color: '#fbbf24' }}>
+              <div style={{ background: 'rgba(217, 119, 6, 0.1)', padding: '16px', borderRadius: '14px', color: 'var(--color-gold)' }}>
                 <Calendar size={28} />
               </div>
               <div>
@@ -461,7 +461,7 @@ export default function VendorDashboard() {
             </div>
 
             <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: '16px', borderRadius: '14px', color: '#34d399' }}>
+              <div style={{ background: 'rgba(5, 150, 105, 0.1)', padding: '16px', borderRadius: '14px', color: 'var(--color-success)' }}>
                 <CheckCircle2 size={28} />
               </div>
               <div>
@@ -471,24 +471,24 @@ export default function VendorDashboard() {
             </div>
 
             <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: 'rgba(79, 70, 229, 0.15)', padding: '16px', borderRadius: '14px', color: '#a5b4fc' }}>
+              <div style={{ background: 'rgba(79, 70, 229, 0.1)', padding: '16px', borderRadius: '14px', color: 'var(--color-primary)' }}>
                 <Star size={28} />
               </div>
               <div>
                 <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>דירוג ממוצע מעודכן</span>
-                <span style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fbbf24' }}>
-                  {vendorProfile?.review_count > 0 ? `${Number(vendorProfile.rating_avg).toFixed(1)} ⭐` : 'טרם דורג (ספק חדש)'}
+                <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-gold)' }}>
+                  {vendorProfile?.review_count > 0 ? `${Number(vendorProfile.rating_avg).toFixed(1)} מתוך 5` : 'טרם דורג (ספק חדש)'}
                 </span>
               </div>
             </div>
 
             <div className="glass-card" style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: 'rgba(52, 211, 153, 0.15)', padding: '16px', borderRadius: '14px', color: '#34d399' }}>
+              <div style={{ background: 'rgba(5, 150, 105, 0.1)', padding: '16px', borderRadius: '14px', color: 'var(--color-success)' }}>
                 <DollarSign size={28} />
               </div>
               <div>
                 <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', display: 'block' }}>סך הכנסות מוסכמות</span>
-                <span style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fbbf24' }}>₪{totalAgreedSpent.toLocaleString()}</span>
+                <span style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--color-gold)' }}>₪{totalAgreedSpent.toLocaleString()}</span>
               </div>
             </div>
           </div>
